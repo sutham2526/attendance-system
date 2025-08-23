@@ -5,1826 +5,360 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบบันทึกเวลาเรียน</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Sarabun', sans-serif; }
-        .status-btn { transition: all 0.3s ease; }
-        .status-btn.active { transform: scale(1.1); }
-        .loading { opacity: 0.6; pointer-events: none; }
-        .nav-btn { transition: all 0.3s ease; }
-        .nav-btn:hover { transform: translateY(-2px); }
+        
+        * {
+            font-family: 'Sarabun', sans-serif;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading.show {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .message.show {
+            transform: translateX(0);
+        }
+        
+        .message.success {
+            background-color: #10b981;
+        }
+        
+        .message.error {
+            background-color: #ef4444;
+        }
+        
+        .message.info {
+            background-color: #3b82f6;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-lg p-6 flex items-center">
-            <i class="fas fa-spinner fa-spin text-blue-500 text-2xl mr-3"></i>
-            <span class="text-lg">กำลังโหลดข้อมูล...</span>
+    <div id="loading" class="loading">
+        <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <p id="loadingText" class="text-gray-700">กำลังโหลด...</p>
         </div>
     </div>
 
-    <!-- Header -->
-    <header class="bg-white shadow-lg border-b-4 border-blue-500">
-        <div class="container mx-auto px-4 py-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <i class="fas fa-graduation-cap text-blue-600 text-3xl mr-3"></i>
-                    <h1 class="text-3xl font-bold text-gray-800">ระบบบันทึกเวลาเรียน</h1>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div id="connection-status" class="flex items-center text-sm">
-                        <div class="w-3 h-3 rounded-full bg-gray-400 mr-2"></div>
-                        <span class="text-gray-600">ไม่ทราบสถานะ</span>
-                    </div>
-                    <button onclick="testConnection()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all text-sm">
-                        <i class="fas fa-wifi mr-2"></i>
-                        ทดสอบการเชื่อมต่อ
-                    </button>
-                    <button onclick="debugGoogleSheets()" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all text-sm">
-                        <i class="fas fa-bug mr-2"></i>
-                        ตรวจสอบข้อมูล
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
+    <!-- Message Container -->
+    <div id="messageContainer"></div>
 
-    <!-- Navigation -->
-    <nav class="bg-white shadow-md sticky top-0 z-50">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-center space-x-8 py-4">
-                <button onclick="showSection('attendance')" class="nav-btn flex items-center px-6 py-3 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-all">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    บันทึกการเข้าเรียน
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">📚 ระบบบันทึกเวลาเรียน</h1>
+            <p class="text-gray-600">จัดการข้อมูลการเข้าเรียนอย่างมีประสิทธิภาพ</p>
+        </div>
+
+        <!-- Navigation -->
+        <div class="bg-white rounded-lg shadow-md mb-8">
+            <div class="flex flex-wrap justify-center p-4 space-x-2 space-y-2 md:space-y-0">
+                <button onclick="showSection('attendance')" class="nav-btn bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
+                    📝 บันทึกการเข้าเรียน
                 </button>
-                <button onclick="showSection('manage')" class="nav-btn flex items-center px-6 py-3 rounded-lg bg-gray-300 text-gray-600 hover:bg-green-600 hover:text-white transition-all">
-                    <i class="fas fa-cogs mr-2"></i>
-                    จัดการข้อมูล
+                <button onclick="showSection('management')" class="nav-btn bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-colors">
+                    ⚙️ จัดการข้อมูล
                 </button>
-                <button onclick="showSection('history')" class="nav-btn flex items-center px-6 py-3 rounded-lg bg-gray-300 text-gray-600 hover:bg-purple-600 hover:text-white transition-all">
-                    <i class="fas fa-history mr-2"></i>
-                    ประวัติการเข้าเรียน
+                <button onclick="showSection('history')" class="nav-btn bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg transition-colors">
+                    📊 ประวัติการเข้าเรียน
                 </button>
             </div>
         </div>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- บันทึกการเข้าเรียน -->
-        <div id="attendance-section" class="section">
-            <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                    <i class="fas fa-calendar-check text-blue-500 mr-3"></i>
-                    บันทึกการเข้าเรียน
-                </h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">วันที่</label>
-                        <input type="date" id="attendance-date" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ห้องเรียน</label>
-                        <select id="attendance-classroom" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">เลือกห้องเรียน</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">รายวิชา</label>
-                        <select id="attendance-subject" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">เลือกรายวิชา</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="student-list" class="hidden">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">รายชื่อนักเรียน</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full bg-white border border-gray-200 rounded-lg">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">เลขที่</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">เลขประจำตัว</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">ชื่อ-สกุล</th>
-                                    <th class="px-4 py-3 text-center text-sm font-medium text-gray-700">สถานะการเข้าเรียน</th>
-                                </tr>
-                            </thead>
-                            <tbody id="student-table-body">
-                            </tbody>
-                        </table>
-                    </div>
+        <!-- Content Sections -->
+        <div id="content" class="fade-in">
+            <!-- Attendance Section -->
+            <div id="attendanceSection" class="section">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 บันทึกการเข้าเรียน</h2>
                     
-                    <div class="mt-6 flex justify-center">
-                        <button onclick="saveAttendance()" class="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all flex items-center">
-                            <i class="fas fa-save mr-2"></i>
-                            บันทึก
+                    <div class="grid md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">วันที่</label>
+                            <input type="date" id="attendanceDate" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ห้องเรียน</label>
+                            <select id="attendanceClassroom" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">เลือกห้องเรียน</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">รายวิชา</label>
+                            <select id="attendanceSubject" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">เลือกรายวิชา</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="loadAttendanceForm()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors mb-6">
+                        โหลดรายชื่อนักเรียน
+                    </button>
+
+                    <div id="studentList" class="hidden">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">รายชื่อนักเรียน</h3>
+                        <div id="studentAttendance" class="space-y-2"></div>
+                        <button onclick="saveAttendance()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors mt-6">
+                            บันทึกการเข้าเรียน
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- จัดการข้อมูล -->
-        <div id="manage-section" class="section hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- จัดการห้องเรียน -->
-                <div class="bg-white rounded-xl shadow-lg p-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                        <i class="fas fa-school text-green-500 mr-3"></i>
-                        จัดการห้องเรียน
-                    </h2>
+            <!-- Management Section -->
+            <div id="managementSection" class="section hidden">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Classroom Management -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">🏫 จัดการห้องเรียน</h2>
+                        
+                        <div class="mb-4">
+                            <input type="text" id="classroomName" placeholder="ชื่อห้องเรียน" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-3">
+                            <button onclick="addClassroom()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
+                                เพิ่มห้องเรียน
+                            </button>
+                        </div>
+
+                        <div id="classroomList" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Subject Management -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-6">📚 จัดการรายวิชา</h2>
+                        
+                        <div class="mb-4">
+                            <input type="text" id="subjectName" placeholder="ชื่อรายวิชา" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-3">
+                            <button onclick="addSubject()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">
+                                เพิ่มรายวิชา
+                            </button>
+                        </div>
+
+                        <div id="subjectList" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Section -->
+            <div id="historySection" class="section hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 ประวัติการเข้าเรียน</h2>
                     
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อห้องเรียน</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="new-classroom" placeholder="เพิ่มห้องเรียนใหม่" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                            <button onclick="addClassroom()" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all">
-                                <i class="fas fa-plus"></i>
+                    <div class="grid md:grid-cols-4 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">วันที่</label>
+                            <input type="date" id="historyDate" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ห้องเรียน</label>
+                            <select id="historyClassroom" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">ทุกห้องเรียน</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">รายวิชา</label>
+                            <select id="historySubject" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">ทุกรายวิชา</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="filterHistory()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors w-full">
+                                ค้นหา
                             </button>
                         </div>
                     </div>
 
-                    <div id="classroom-list" class="space-y-4">
-                    </div>
-                </div>
-
-                <!-- จัดการรายวิชา -->
-                <div class="bg-white rounded-xl shadow-lg p-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                        <i class="fas fa-book text-purple-500 mr-3"></i>
-                        จัดการรายวิชา
-                    </h2>
-                    
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อรายวิชา</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="new-subject" placeholder="เพิ่มรายวิชาใหม่" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            <button onclick="addSubject()" class="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
+                    <div class="mb-4">
+                        <button onclick="deleteSelectedAttendance()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg transition-colors">
+                            🗑️ ลบข้อมูลที่เลือก
+                        </button>
                     </div>
 
-                    <div id="subject-list" class="space-y-4">
-                    </div>
+                    <div id="historyResults" class="overflow-x-auto"></div>
                 </div>
             </div>
         </div>
-
-        <!-- หน้าแก้ไขห้องเรียน -->
-        <div id="edit-classroom-section" class="section hidden">
-            <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                    <i class="fas fa-edit text-blue-500 mr-3"></i>
-                    แก้ไขห้องเรียน: <span id="edit-classroom-title" class="text-blue-600 ml-2"></span>
-                </h2>
-                
-                <!-- ฟอร์มเพิ่มนักเรียน -->
-                <div class="mb-6 p-6 bg-gray-50 rounded-lg">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">เพิ่มข้อมูลนักเรียน</h3>
-                    
-                    <!-- ช่องกรอกข้อมูล -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">เลขที่</label>
-                            <input type="number" id="edit-student-number" placeholder="เลขที่" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">เลขประจำตัวนักเรียน</label>
-                            <input type="text" id="edit-student-id" placeholder="เลขประจำตัว" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ-สกุล</label>
-                            <input type="text" id="edit-student-name" placeholder="ชื่อ-สกุล" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                        </div>
-                    </div>
-                    
-                    <!-- ปุ่มต่างๆ -->
-                    <div class="flex flex-wrap gap-3">
-                        <input type="file" id="excel-file-edit-page" accept=".xlsx,.xls" style="display: none;">
-                        <button onclick="document.getElementById('excel-file-edit-page').click()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all text-sm">
-                            <i class="fas fa-file-excel mr-2"></i>
-                            นำเข้าจาก Excel
-                        </button>
-                        <button onclick="addStudentToEditPage()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all text-sm">
-                            <i class="fas fa-plus mr-2"></i>
-                            เพิ่มนักเรียน
-                        </button>
-                        <button onclick="saveEditedClassroom()" class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all text-sm">
-                            <i class="fas fa-save mr-2"></i>
-                            บันทึกข้อมูล
-                        </button>
-                        <button onclick="cancelEditClassroom()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all text-sm">
-                            <i class="fas fa-times mr-2"></i>
-                            ยกเลิก
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- แสดงรายชื่อนักเรียน -->
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                        รายชื่อนักเรียนในห้อง (<span id="edit-student-count">0</span> คน)
-                    </h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full bg-white border border-gray-200 rounded-lg">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">เลขที่</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">เลขประจำตัว</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">ชื่อ-สกุล</th>
-                                    <th class="px-4 py-3 text-center text-sm font-medium text-gray-700">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="edit-student-table-body">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ประวัติการเข้าเรียน -->
-        <div id="history-section" class="section hidden">
-            <div class="bg-white rounded-xl shadow-lg p-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                    <i class="fas fa-chart-line text-purple-500 mr-3"></i>
-                    ประวัติการเข้าเรียน
-                </h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">วันที่</label>
-                        <input type="date" id="history-date" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ห้องเรียน</label>
-                        <select id="history-classroom" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            <option value="">เลือกห้องเรียน</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">รายวิชา</label>
-                        <select id="history-subject" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                            <option value="">เลือกรายวิชา</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="history-results" class="hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full bg-white border border-gray-200 rounded-lg">
-                            <thead class="bg-gray-50">
-                                <tr id="history-header">
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">เลขที่</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">เลขประจำตัว</th>
-                                    <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">ชื่อ-สกุล</th>
-                                </tr>
-                            </thead>
-                            <tbody id="history-table-body">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+    </div>
 
     <script>
+        // Configuration
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwx_l9dnBVP5daaTfxyP8QYdOkClRBdwvUvN9-o51-uI9OGUNl2t6xf3u3I9xPK9p0/exec';
+        
         // Global variables
         let classrooms = [];
         let subjects = [];
         let attendanceRecords = [];
-        
-        // ⚠️ สำคัญ: เปลี่ยน URL นี้เป็น URL ของ Google Apps Script ของคุณ
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwx_l9dnBVP5daaTfxyP8QYdOkClRBdwvUvN9-o51-uI9OGUNl2t6xf3u3I9xPK9p0/exec';
+        let currentStudents = [];
 
-        // Initialize app
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            initializeDateInput();
-            loadAllDataFromSheets();
-            setupEventListeners();
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('attendanceDate').value = today;
+            document.getElementById('historyDate').value = today;
             
-            // Load initial data from localStorage if available
-            loadDataFromLocalStorage();
+            // Load initial data
+            loadAllData();
+            
+            // Show attendance section by default
+            showSection('attendance');
         });
 
-        function updateConnectionStatus(isConnected, message = '') {
-            const statusElement = document.getElementById('connection-status');
-            const dot = statusElement.querySelector('.w-3');
-            const text = statusElement.querySelector('span');
-            
-            if (isConnected) {
-                dot.className = 'w-3 h-3 rounded-full bg-green-500 mr-2';
-                text.textContent = 'เชื่อมต่อ Google Sheets';
-                text.className = 'text-green-600';
-            } else {
-                dot.className = 'w-3 h-3 rounded-full bg-red-500 mr-2';
-                text.textContent = message || 'ไม่เชื่อมต่อ Google Sheets';
-                text.className = 'text-red-600';
-            }
-        }
-
-        async function testConnection() {
-            try {
-                showLoading();
-                updateConnectionStatus(false, 'กำลังทดสอบ...');
-                
-                console.log('🔍 Manual connection test started');
-                const isConnected = await testGoogleSheetsConnection();
-                
-                hideLoading();
-                
-                if (isConnected) {
-                    updateConnectionStatus(true);
-                    Swal.fire({
-                        icon: 'success',
-                        title: '✅ การเชื่อมต่อสำเร็จ',
-                        text: 'Google Sheets พร้อมใช้งาน',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                } else {
-                    updateConnectionStatus(false, 'การเชื่อมต่อล้มเหลว');
-                    Swal.fire({
-                        icon: 'error',
-                        title: '❌ การเชื่อมต่อล้มเหลว',
-                        html: `<div class="text-left">
-                            <p><strong>กรุณาตรวจสอบ:</strong></p>
-                            <ol class="list-decimal list-inside mt-2 text-sm">
-                                <li>Google Apps Script ได้ Deploy แล้วหรือไม่</li>
-                                <li>URL ถูกต้องหรือไม่</li>
-                                <li>Permission ตั้งเป็น "Anyone" แล้วหรือไม่</li>
-                                <li>การเชื่อมต่ออินเทอร์เน็ต</li>
-                            </ol>
-                            <p class="mt-3 text-xs text-gray-500">ดู Console (F12) สำหรับข้อมูลเพิ่มเติม</p>
-                        </div>`,
-                        confirmButtonText: 'ตกลง'
-                    });
-                }
-            } catch (error) {
-                hideLoading();
-                updateConnectionStatus(false, 'เกิดข้อผิดพลาด');
-                console.error('❌ Manual connection test error:', error);
-                
-                Swal.fire({
-                    icon: 'error',
-                    title: 'เกิดข้อผิดพลาด',
-                    text: error.message,
-                    confirmButtonText: 'ตกลง'
-                });
-            }
-        }
-
-        async function debugGoogleSheets() {
-            try {
-                showLoading();
-                console.log('🔍 Starting debug process...');
-                
-                // ตรวจสอบ URL ก่อน
-                if (WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-                    hideLoading();
-                    Swal.fire({
-                        icon: 'error',
-                        title: '❌ URL ยังไม่ได้ตั้งค่า',
-                        html: `<div class="text-left">
-                            <p><strong>กรุณาทำตามขั้นตอนนี้:</strong></p>
-                            <ol class="list-decimal list-inside mt-2 text-sm">
-                                <li>ไปที่ <a href="https://script.google.com" target="_blank" class="text-blue-600">Google Apps Script</a></li>
-                                <li>สร้างโปรเจกต์ใหม่และวางโค้ด Google Apps Script</li>
-                                <li>Deploy เป็น Web app</li>
-                                <li>คัดลอก URL มาแทนที่ในโค้ด</li>
-                            </ol>
-                        </div>`,
-                        confirmButtonText: 'ตกลง'
-                    });
-                    return;
-                }
-                
-                // ทดสอบการส่งข้อมูลจริง
-                const testData = {
-                    action: 'debugTest',
-                    timestamp: new Date().toISOString(),
-                    testMessage: 'This is a debug test from the web app'
-                };
-                
-                console.log('🧪 Sending test data:', testData);
-                
-                const result = await saveToGoogleSheets('debugTest', testData);
-                
-                hideLoading();
-                
-                // แสดงผลการตรวจสอบ
-                Swal.fire({
-                    icon: result.success ? 'success' : 'error',
-                    title: '🔍 ผลการตรวจสอบ',
-                    html: `<div class="text-left text-sm">
-                        <p><strong>✅ Success:</strong> ${result.success || false}</p>
-                        <p><strong>💬 Message:</strong> ${result.message || 'ไม่มีข้อความ'}</p>
-                        <p class="mt-2 text-xs text-gray-500">ดู Console (F12) สำหรับข้อมูลเพิ่มเติม</p>
-                    </div>`,
-                    confirmButtonText: 'ตกลง',
-                    width: '600px'
-                });
-                
-            } catch (error) {
-                hideLoading();
-                console.error('💥 Debug error:', error);
-                
-                Swal.fire({
-                    icon: 'error',
-                    title: '❌ การตรวจสอบล้มเหลว',
-                    html: `<div class="text-left">
-                        <p><strong>ข้อผิดพลาด:</strong> ${error.message}</p>
-                        <p class="mt-2 text-sm text-gray-600">ตรวจสอบ Console (F12) สำหรับรายละเอียด</p>
-                    </div>`,
-                    confirmButtonText: 'ตกลง'
-                });
-            }
-        }
-
-        function showLoading() {
-            document.getElementById('loading-overlay').classList.remove('hidden');
+        // Utility functions
+        function showLoading(text = 'กำลังโหลด...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loading').classList.add('show');
         }
 
         function hideLoading() {
-            document.getElementById('loading-overlay').classList.add('hidden');
+            document.getElementById('loading').classList.remove('show');
         }
 
-        // Google Sheets API functions - แก้ไขปัญหา CORS
-        async function saveToGoogleSheets(action, data) {
-            try {
-                showLoading();
-                console.log('🔄 Sending to Google Sheets:', { action, data });
-                console.log('📍 URL:', WEB_APP_URL);
-                
-                // ตรวจสอบ URL ก่อน
-                if (WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-                    throw new Error('กรุณาตั้งค่า Google Apps Script URL ก่อน');
-                }
-                
-                const payload = {
-                    action: action,
-                    ...data
-                };
-                
-                console.log('📦 Full payload:', JSON.stringify(payload, null, 2));
-                
-                // ลองหลายวิธีเพื่อแก้ปัญหา CORS
-                let response;
-                let result;
-                
-                try {
-                    // วิธีที่ 1: ใช้ no-cors mode (สำหรับ POST)
-                    console.log('🔄 Trying method 1: no-cors mode');
-                    response = await fetch(WEB_APP_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'text/plain',
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    console.log('📡 Method 1 response:', response);
-                    
-                    // ใน no-cors mode เราไม่สามารถอ่าน response ได้
-                    // ถ้าไม่มี error แสดงว่าส่งสำเร็จ
-                    hideLoading();
-                    return { success: true, message: 'ข้อมูลถูกส่งไปยัง Google Sheets แล้ว' };
-                    
-                } catch (error1) {
-                    console.log('❌ Method 1 failed:', error1);
-                    
-                    try {
-                        // วิธีที่ 2: ใช้ GET request แทน POST
-                        console.log('🔄 Trying method 2: GET request with URL params');
-                        const params = new URLSearchParams();
-                        params.append('action', action);
-                        params.append('data', JSON.stringify(data));
-                        
-                        response = await fetch(`${WEB_APP_URL}?${params.toString()}`, {
-                            method: 'GET',
-                            mode: 'cors'
-                        });
-                        
-                        console.log('📡 Method 2 response status:', response.status);
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-                        
-                        const responseText = await response.text();
-                        console.log('📄 Method 2 response text:', responseText);
-                        
-                        try {
-                            result = JSON.parse(responseText);
-                        } catch (parseError) {
-                            console.error('❌ JSON parse error:', parseError);
-                            // ถ้า parse ไม่ได้ แต่ response ok แสดงว่าส่งสำเร็จ
-                            result = { success: true, message: 'ข้อมูลถูกส่งสำเร็จ' };
-                        }
-                        
-                    } catch (error2) {
-                        console.log('❌ Method 2 failed:', error2);
-                        
-                        try {
-                            // วิธีที่ 3: ใช้ JSONP-like approach
-                            console.log('🔄 Trying method 3: Script tag approach');
-                            
-                            return new Promise((resolve, reject) => {
-                                const script = document.createElement('script');
-                                const callbackName = 'callback_' + Date.now();
-                                
-                                window[callbackName] = function(data) {
-                                    document.head.removeChild(script);
-                                    delete window[callbackName];
-                                    resolve(data);
-                                };
-                                
-                                const params = new URLSearchParams();
-                                params.append('action', action);
-                                params.append('data', JSON.stringify(data));
-                                params.append('callback', callbackName);
-                                
-                                script.src = `${WEB_APP_URL}?${params.toString()}`;
-                                script.onerror = function() {
-                                    document.head.removeChild(script);
-                                    delete window[callbackName];
-                                    // ถึงแม้จะ error แต่ข้อมูลอาจส่งไปแล้ว
-                                    resolve({ success: true, message: 'ข้อมูลถูกส่งไปแล้ว (ไม่สามารถยืนยันได้)' });
-                                };
-                                
-                                document.head.appendChild(script);
-                                
-                                // Timeout after 10 seconds
-                                setTimeout(() => {
-                                    if (document.head.contains(script)) {
-                                        document.head.removeChild(script);
-                                        delete window[callbackName];
-                                        resolve({ success: true, message: 'ข้อมูลถูกส่งไปแล้ว (timeout)' });
-                                    }
-                                }, 10000);
-                            });
-                            
-                        } catch (error3) {
-                            console.log('❌ Method 3 failed:', error3);
-                            throw new Error('ไม่สามารถเชื่อมต่อ Google Sheets ได้ - กรุณาตรวจสอบ URL และการตั้งค่า');
-                        }
-                    }
-                }
-                
-                hideLoading();
-                
-                if (result && !result.success) {
-                    console.error('❌ Google Sheets returned success: false');
-                    console.error('❌ Error message:', result.message);
-                    throw new Error(result.message || 'Google Sheets ส่งกลับข้อผิดพลาด');
-                }
-                
-                console.log('🎉 Successfully saved to Google Sheets!');
-                return result || { success: true, message: 'ข้อมูลถูกส่งสำเร็จ' };
-                
-            } catch (error) {
-                hideLoading();
-                console.error('💥 Error saving to Google Sheets:', error);
-                console.error('💥 Error stack:', error.stack);
-                throw error;
+        function showMessage(message, type = 'info') {
+            const messageContainer = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.textContent = message;
+            
+            messageContainer.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+                setTimeout(() => {
+                    messageContainer.removeChild(messageDiv);
+                }, 300);
+            }, 3000);
+        }
+
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+            
+            // Update navigation buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('ring-2', 'ring-offset-2');
+            });
+            
+            // Render content based on section
+            if (sectionName === 'management') {
+                renderClassroomManagement();
+                renderSubjectManagement();
+            } else if (sectionName === 'history') {
+                populateHistoryFilters();
+            } else if (sectionName === 'attendance') {
+                populateAttendanceSelects();
             }
         }
 
-        async function testGoogleSheetsConnection() {
+        // Data loading functions
+        async function loadAllData() {
             try {
-                console.log('🔍 Testing connection to:', WEB_APP_URL);
+                showLoading('กำลังโหลดข้อมูล...');
                 
-                if (WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-                    return false;
-                }
-                
-                const response = await fetch(`${WEB_APP_URL}?action=test&timestamp=${Date.now()}`, {
-                    method: 'GET',
-                    mode: 'no-cors'
-                });
-                
-                console.log('📡 Test response:', response);
-                
-                // ใน no-cors mode เราไม่สามารถตรวจสอบ response ได้
-                // ถ้าไม่มี error แสดงว่าเชื่อมต่อได้
-                return true;
-                
-            } catch (error) {
-                console.error('❌ Connection test failed:', error);
-                return false;
-            }
-        }
-
-        async function loadAllDataFromSheets() {
-            try {
-                showLoading();
-                
-                // ตรวจสอบ URL ก่อน
-                if (WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-                    hideLoading();
-                    updateConnectionStatus(false, 'URL ยังไม่ได้ตั้งค่า');
-                    loadDataFromLocalStorage();
-                    return;
-                }
-                
-                // ทดสอบการเชื่อมต่อก่อน
-                const connectionTest = await testGoogleSheetsConnection();
-                if (!connectionTest) {
-                    throw new Error('Connection test failed');
-                }
-                
-                console.log('🔄 Loading data from:', `${WEB_APP_URL}?action=loadAllData`);
-                const response = await fetch(`${WEB_APP_URL}?action=loadAllData&timestamp=${Date.now()}`, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                console.log('📡 Load data response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
+                const response = await fetch(`${WEB_APP_URL}?action=loadAllData`);
                 const result = await response.json();
-                console.log('📄 Load data response:', result);
-                hideLoading();
                 
                 if (result.success) {
                     classrooms = result.data.classrooms || [];
                     subjects = result.data.subjects || [];
                     attendanceRecords = result.data.attendance || [];
                     
-                    // Save to localStorage as backup
-                    saveToLocalStorage();
+                    // เรียงลำดับข้อมูล
+                    classrooms.sort((a, b) => a.name.localeCompare(b.name, 'th'));
+                    subjects.sort((a, b) => a.name.localeCompare(b.name, 'th'));
                     
-                    // Update UI
-                    updateClassroomSelects();
-                    updateSubjectSelects();
-                    displayClassrooms();
-                    displaySubjects();
-                    
-                    console.log('✅ Data loaded from Google Sheets successfully');
-                    
-                    // อัปเดตสถานะการเชื่อมต่อ
-                    updateConnectionStatus(true);
-                    
-                    // แสดงข้อความสำเร็จ
-                    Swal.fire({
-                        icon: 'success',
-                        title: '✅ เชื่อมต่อ Google Sheets สำเร็จ',
-                        html: `<div class="text-left">
-                            <p>ข้อมูลที่โหลดได้:</p>
-                            <ul class="list-disc list-inside mt-2 text-sm">
-                                <li>ห้องเรียน: ${classrooms.length} ห้อง</li>
-                                <li>รายวิชา: ${subjects.length} วิชา</li>
-                                <li>ประวัติการเข้าเรียน: ${attendanceRecords.length} รายการ</li>
-                            </ul>
-                        </div>`,
-                        timer: 3000,
-                        showConfirmButton: false
-                    });
+                    populateAttendanceSelects();
+                    showMessage('โหลดข้อมูลสำเร็จ', 'success');
                 } else {
-                    throw new Error(result.message || 'Failed to load data');
+                    showMessage('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + result.message, 'error');
                 }
             } catch (error) {
+                console.error('Error loading data:', error);
+                showMessage('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+            } finally {
                 hideLoading();
-                console.error('❌ Error loading data from Google Sheets:', error);
-                
-                // อัปเดตสถานะการเชื่อมต่อ
-                updateConnectionStatus(false, 'การเชื่อมต่อล้มเหลว');
-                
-                // ใช้ข้อมูลจาก localStorage เป็น fallback
-                loadDataFromLocalStorage();
-                
-                Swal.fire({
-                    icon: 'warning',
-                    title: '⚠️ ใช้ข้อมูลในเครื่อง',
-                    html: `<div class="text-left">
-                        <p><strong>ไม่สามารถเชื่อมต่อ Google Sheets:</strong></p>
-                        <p class="mt-2 text-sm text-red-600">${error.message}</p>
-                        <p class="mt-2 text-sm text-blue-600">กำลังใช้ข้อมูลที่บันทึกไว้ในเครื่อง</p>
-                        <p class="mt-2 text-xs text-gray-500">ข้อมูลจะถูกซิงค์เมื่อการเชื่อมต่อกลับมาปกติ</p>
-                    </div>`,
-                    confirmButtonText: 'ตกลง'
-                });
             }
         }
 
-        function loadDataFromLocalStorage() {
-            try {
-                const savedClassrooms = localStorage.getItem('classrooms');
-                const savedSubjects = localStorage.getItem('subjects');
-                const savedAttendance = localStorage.getItem('attendanceRecords');
-                
-                if (savedClassrooms) {
-                    const parsedClassrooms = JSON.parse(savedClassrooms);
-                    if (Array.isArray(parsedClassrooms)) {
-                        classrooms = parsedClassrooms;
-                    }
-                }
-                if (savedSubjects) {
-                    const parsedSubjects = JSON.parse(savedSubjects);
-                    if (Array.isArray(parsedSubjects)) {
-                        subjects = parsedSubjects;
-                    }
-                }
-                if (savedAttendance) {
-                    const parsedAttendance = JSON.parse(savedAttendance);
-                    if (Array.isArray(parsedAttendance)) {
-                        attendanceRecords = parsedAttendance;
-                    }
-                }
-                
-                // Always update UI after loading data
-                updateClassroomSelects();
-                updateSubjectSelects();
-                displayClassrooms();
-                displaySubjects();
-                
-                console.log('📱 Data loaded from localStorage:', {
-                    classrooms: classrooms.length,
-                    subjects: subjects.length,
-                    attendance: attendanceRecords.length
-                });
-            } catch (error) {
-                console.error('❌ Error loading data from localStorage:', error);
-                // Initialize with empty arrays if localStorage is corrupted
-                classrooms = [];
-                subjects = [];
-                attendanceRecords = [];
-                
-                updateClassroomSelects();
-                updateSubjectSelects();
-                displayClassrooms();
-                displaySubjects();
-            }
-        }
-
-        function saveToLocalStorage() {
-            localStorage.setItem('classrooms', JSON.stringify(classrooms));
-            localStorage.setItem('subjects', JSON.stringify(subjects));
-            localStorage.setItem('attendanceRecords', JSON.stringify(attendanceRecords));
-        }
-
-        function initializeDateInput() {
-            const dateInput = document.getElementById('attendance-date');
-            const today = new Date();
-            dateInput.value = formatDate(today);
-            dateInput.max = formatDate(today);
-        }
-
-        function formatDate(date) {
-            return date.toISOString().split('T')[0];
-        }
-
-        function formatDateThai(dateStr) {
-            const date = new Date(dateStr);
-            return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-        }
-
-        function setupEventListeners() {
-            document.getElementById('attendance-date').addEventListener('change', function() {
-                resetAttendanceOnDateChange();
-                resetAttendanceStatus();
-            });
-            document.getElementById('attendance-classroom').addEventListener('change', updateStudentList);
-            document.getElementById('attendance-subject').addEventListener('change', updateStudentList);
-            document.getElementById('history-classroom').addEventListener('change', updateHistorySubjects);
-            document.getElementById('history-subject').addEventListener('change', showAttendanceHistory);
-            document.getElementById('history-date').addEventListener('change', showAttendanceHistory);
-        }
-
-        // Navigation
-        function showSection(sectionName) {
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.add('hidden');
-            });
-            document.getElementById(sectionName + '-section').classList.remove('hidden');
+        function populateAttendanceSelects() {
+            const classroomSelect = document.getElementById('attendanceClassroom');
+            const subjectSelect = document.getElementById('attendanceSubject');
             
-            // Update nav buttons - รีเซ็ตทุกปุ่มให้เป็นสีอ่อน
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-500', 'bg-blue-600', 'bg-blue-700');
-                btn.classList.remove('bg-green-500', 'bg-green-600', 'bg-green-700');
-                btn.classList.remove('bg-purple-500', 'bg-purple-600', 'bg-purple-700');
-                btn.classList.remove('shadow-lg', 'transform', 'scale-105');
-                btn.classList.add('bg-gray-300', 'text-gray-600');
-                btn.classList.remove('text-white');
-            });
+            // Clear existing options
+            classroomSelect.innerHTML = '<option value="">เลือกห้องเรียน</option>';
+            subjectSelect.innerHTML = '<option value="">เลือกรายวิชา</option>';
             
-            // เพิ่มสีเด่นให้ปุ่มที่เลือก
-            if (sectionName === 'attendance') {
-                event.target.classList.remove('bg-gray-300', 'text-gray-600');
-                event.target.classList.add('bg-blue-600', 'hover:bg-blue-700', 'text-white', 'shadow-lg', 'transform', 'scale-105');
-                loadAttendanceData();
-                resetAttendanceForm();
-            } else if (sectionName === 'manage') {
-                event.target.classList.remove('bg-gray-300', 'text-gray-600');
-                event.target.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white', 'shadow-lg', 'transform', 'scale-105');
-                displayClassrooms();
-                displaySubjects();
-            } else if (sectionName === 'history') {
-                event.target.classList.remove('bg-gray-300', 'text-gray-600');
-                event.target.classList.add('bg-purple-600', 'hover:bg-purple-700', 'text-white', 'shadow-lg', 'transform', 'scale-105');
-                loadHistoryData();
-                resetHistoryForm();
-            }
-        }
-
-        function resetAttendanceForm() {
-            // รีเซ็ตฟอร์มบันทึกการเข้าเรียน
-            document.getElementById('attendance-date').value = formatDate(new Date());
-            document.getElementById('attendance-classroom').value = '';
-            document.getElementById('attendance-subject').value = '';
-            document.getElementById('student-list').classList.add('hidden');
-        }
-
-        function resetHistoryForm() {
-            // รีเซ็ตฟอร์มประวัติการเข้าเรียน
-            document.getElementById('history-date').value = '';
-            document.getElementById('history-classroom').value = '';
-            document.getElementById('history-subject').value = '';
-            document.getElementById('history-results').classList.add('hidden');
-        }
-
-        // Classroom management
-        async function addClassroom() {
-            const input = document.getElementById('new-classroom');
-            const name = input.value.trim();
-            
-            if (name) {
-                const classroom = {
-                    id: Date.now(),
-                    name: name,
-                    students: []
-                };
-                classrooms.push(classroom);
-                input.value = '';
-                
-                // Update display immediately
-                displayClassrooms();
-                updateClassroomSelects();
-                saveToLocalStorage();
-                
-                // Save to Google Sheets
-                try {
-                    const result = await saveToGoogleSheets('saveClassrooms', { classrooms });
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: '✅ เพิ่มห้องเรียนสำเร็จ',
-                        html: `<div class="text-left">
-                            <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                            <p>✅ บันทึกลง Google Sheets สำเร็จ</p>
-                        </div>`,
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                } catch (error) {
-                    // Keep the classroom in local array even if save failed
-                    console.error('❌ Failed to save to Google Sheets:', error);
-                    Swal.fire({
-                        icon: 'warning',
-                        title: '⚠️ เพิ่มห้องเรียนสำเร็จ',
-                        html: `<div class="text-left">
-                            <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                            <p>❌ ไม่สามารถบันทึกลง Google Sheets</p>
-                            <p class="mt-2 text-sm text-red-600">ข้อผิดพลาด: ${error.message}</p>
-                        </div>`,
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
-            }
-        }
-
-        function displayClassrooms() {
-            const container = document.getElementById('classroom-list');
-            container.innerHTML = '';
-            
-            if (classrooms.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-center py-4">ยังไม่มีห้องเรียน</p>';
-                return;
-            }
-            
-            classrooms.forEach(classroom => {
-                const div = document.createElement('div');
-                div.className = 'border border-gray-200 rounded-lg p-4';
-                div.innerHTML = `
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="font-semibold text-gray-800">${classroom.name} (จำนวนนักเรียน ${classroom.students.length} คน)</h4>
-                        <div class="flex gap-2">
-                            <button onclick="editClassroom(${classroom.id})" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
-                                <i class="fas fa-edit"></i> แก้ไข
-                            </button>
-                            <button onclick="deleteClassroom(${classroom.id})" class="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600">
-                                <i class="fas fa-trash"></i> ลบ
-                            </button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        let currentEditingClassroomId = null;
-
-        function editClassroom(classroomId) {
-            currentEditingClassroomId = classroomId;
-            const classroom = classrooms.find(c => c.id === classroomId);
-            
-            // Hide manage section and show edit section
-            document.getElementById('manage-section').classList.add('hidden');
-            document.getElementById('edit-classroom-section').classList.remove('hidden');
-            
-            // Set classroom title
-            document.getElementById('edit-classroom-title').textContent = classroom.name;
-            
-            // Clear form inputs
-            document.getElementById('edit-student-number').value = '';
-            document.getElementById('edit-student-id').value = '';
-            document.getElementById('edit-student-name').value = '';
-            
-            // Remove existing event listener first
-            const excelInput = document.getElementById('excel-file-edit-page');
-            const newExcelInput = excelInput.cloneNode(true);
-            excelInput.parentNode.replaceChild(newExcelInput, excelInput);
-            
-            // Setup Excel import event listener
-            newExcelInput.addEventListener('change', function(event) {
-                handleExcelImportForEditPage(event, classroomId);
-            });
-            
-            // Display current students
-            displayStudentsInEditPage();
-        }
-
-        function displayStudentsInEditPage() {
-            const classroom = classrooms.find(c => c.id === currentEditingClassroomId);
-            const tableBody = document.getElementById('edit-student-table-body');
-            const countElement = document.getElementById('edit-student-count');
-            
-            // Update student count
-            countElement.textContent = classroom.students.length;
-            
-            // Clear table
-            tableBody.innerHTML = '';
-            
-            if (classroom.students.length === 0) {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td colspan="4" class="px-4 py-8 text-center text-gray-500">
-                        ยังไม่มีนักเรียนในห้องนี้
-                    </td>
-                `;
-                tableBody.appendChild(row);
-                return;
-            }
-            
-            // Sort students by number
-            classroom.students.sort((a, b) => a.number - b.number);
-            
-            classroom.students.forEach(student => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-gray-200 hover:bg-gray-50';
-                row.innerHTML = `
-                    <td class="px-4 py-3">${student.number}</td>
-                    <td class="px-4 py-3">${student.studentId}</td>
-                    <td class="px-4 py-3">${student.name}</td>
-                    <td class="px-4 py-3 text-center">
-                        <div class="flex justify-center gap-2">
-                            <button onclick="editStudentInEditPage(${student.id})" class="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600">
-                                <i class="fas fa-edit"></i> แก้ไข
-                            </button>
-                            <button onclick="deleteStudentInEditPage(${student.id})" class="px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">
-                                <i class="fas fa-trash"></i> ลบ
-                            </button>
-                        </div>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        function addStudentToEditPage() {
-            const number = document.getElementById('edit-student-number').value.trim();
-            const studentId = document.getElementById('edit-student-id').value.trim();
-            const name = document.getElementById('edit-student-name').value.trim();
-            
-            if (!number || !studentId || !name) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'ข้อมูลไม่ครบถ้วน',
-                    text: 'กรุณากรอกข้อมูลให้ครบทุกช่อง'
-                });
-                return;
-            }
-            
-            const classroom = classrooms.find(c => c.id === currentEditingClassroomId);
-            
-            // Check if student number already exists
-            if (classroom.students.some(s => s.number === parseInt(number))) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'เลขที่ซ้ำ',
-                    text: 'เลขที่นี้มีอยู่แล้วในห้องเรียน'
-                });
-                return;
-            }
-            
-            // Check if student ID already exists
-            if (classroom.students.some(s => s.studentId === studentId)) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'เลขประจำตัวซ้ำ',
-                    text: 'เลขประจำตัวนี้มีอยู่แล้วในห้องเรียน'
-                });
-                return;
-            }
-            
-            const student = {
-                id: Date.now(),
-                number: parseInt(number),
-                studentId: studentId,
-                name: name
-            };
-            
-            classroom.students.push(student);
-            
-            // Clear form
-            document.getElementById('edit-student-number').value = '';
-            document.getElementById('edit-student-id').value = '';
-            document.getElementById('edit-student-name').value = '';
-            
-            // Refresh display
-            displayStudentsInEditPage();
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'เพิ่มนักเรียนสำเร็จ',
-                timer: 1000,
-                showConfirmButton: false
-            });
-        }
-
-        function editStudentInEditPage(studentId) {
-            const classroom = classrooms.find(c => c.id === currentEditingClassroomId);
-            const student = classroom.students.find(s => s.id === studentId);
-            
-            Swal.fire({
-                title: 'แก้ไขข้อมูลนักเรียน',
-                html: `
-                    <input id="edit-student-number-modal" class="swal2-input" value="${student.number}" placeholder="เลขที่">
-                    <input id="edit-student-id-modal" class="swal2-input" value="${student.studentId}" placeholder="เลขประจำตัวนักเรียน">
-                    <input id="edit-student-name-modal" class="swal2-input" value="${student.name}" placeholder="ชื่อ-สกุล">
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'บันทึก',
-                cancelButtonText: 'ยกเลิก',
-                preConfirm: () => {
-                    const number = document.getElementById('edit-student-number-modal').value.trim();
-                    const studentIdValue = document.getElementById('edit-student-id-modal').value.trim();
-                    const name = document.getElementById('edit-student-name-modal').value.trim();
-                    
-                    if (!number || !studentIdValue || !name) {
-                        Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
-                        return false;
-                    }
-                    
-                    // Check for duplicates (excluding current student)
-                    if (classroom.students.some(s => s.id !== studentId && s.number === parseInt(number))) {
-                        Swal.showValidationMessage('เลขที่นี้มีอยู่แล้วในห้องเรียน');
-                        return false;
-                    }
-                    
-                    if (classroom.students.some(s => s.id !== studentId && s.studentId === studentIdValue)) {
-                        Swal.showValidationMessage('เลขประจำตัวนี้มีอยู่แล้วในห้องเรียน');
-                        return false;
-                    }
-                    
-                    return { number: parseInt(number), studentId: studentIdValue, name };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    student.number = result.value.number;
-                    student.studentId = result.value.studentId;
-                    student.name = result.value.name;
-                    
-                    displayStudentsInEditPage();
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'แก้ไขสำเร็จ',
-                        timer: 1000,
-                        showConfirmButton: false
-                    });
-                }
-            });
-        }
-
-        function deleteStudentInEditPage(studentId) {
-            const classroom = classrooms.find(c => c.id === currentEditingClassroomId);
-            const student = classroom.students.find(s => s.id === studentId);
-            
-            Swal.fire({
-                title: 'ยืนยันการลบ',
-                html: `คุณต้องการลบนักเรียน<br><strong>${student.name}</strong><br>หรือไม่?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'ลบ',
-                cancelButtonText: 'ยกเลิก'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    classroom.students = classroom.students.filter(s => s.id !== studentId);
-                    
-                    // เรียงเลขที่ใหม่หลังจากลบ
-                    reorderStudentNumbers(classroom);
-                    
-                    displayStudentsInEditPage();
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'ลบสำเร็จ',
-                        text: 'เรียงเลขที่ใหม่แล้ว',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                }
-            });
-        }
-
-        function handleExcelImportForEditPage(event, classroomId) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-                    
-                    const students = [];
-                    const classroom = classrooms.find(c => c.id === classroomId);
-                    
-                    for (let i = 1; i < jsonData.length; i++) {
-                        const row = jsonData[i];
-                        if (row[0] && row[1] && row[2]) {
-                            const studentNumber = parseInt(row[0]);
-                            const studentId = row[1].toString();
-                            const studentName = row[2].toString();
-                            
-                            // ตรวจสอบว่าเลขที่หรือเลขประจำตัวซ้ำหรือไม่
-                            const isDuplicateNumber = classroom.students.some(s => s.number === studentNumber);
-                            const isDuplicateId = classroom.students.some(s => s.studentId === studentId);
-                            
-                            if (!isDuplicateNumber && !isDuplicateId) {
-                                students.push({
-                                    id: Date.now() + Math.random() * 1000 + i,
-                                    number: studentNumber,
-                                    studentId: studentId,
-                                    name: studentName
-                                });
-                            }
-                        }
-                    }
-                    
-                    if (students.length > 0) {
-                        // เพิ่มนักเรียนใหม่เข้าไปในห้องเรียน
-                        classroom.students = [...classroom.students, ...students];
-                        
-                        // เรียงลำดับตามเลขที่
-                        classroom.students.sort((a, b) => a.number - b.number);
-                        
-                        // อัพเดทการแสดงผล
-                        displayStudentsInEditPage();
-                        
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'นำเข้าข้อมูลสำเร็จ',
-                            text: `เพิ่มนักเรียน ${students.length} คน`,
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'ไม่มีข้อมูลใหม่',
-                            text: 'ข้อมูลทั้งหมดมีอยู่แล้วในระบบ หรือรูปแบบไฟล์ไม่ถูกต้อง'
-                        });
-                    }
-                } catch (error) {
-                    console.error('Excel import error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'เกิดข้อผิดพลาด',
-                        text: 'ไม่สามารถอ่านไฟล์ได้ กรุณาตรวจสอบรูปแบบไฟล์'
-                    });
-                }
-            };
-            reader.readAsArrayBuffer(file);
-            
-            // Reset file input
-            event.target.value = '';
-        }
-
-        async function saveEditedClassroom() {
-            try {
-                showLoading();
-                
-                // บันทึกข้อมูลในเครื่องเสมอ
-                displayClassrooms();
-                updateClassroomSelects();
-                saveToLocalStorage();
-                
-                // พยายามบันทึกไปยัง Google Sheets
-                console.log('🔄 Attempting to save classroom data to Google Sheets...');
-                console.log('📊 Classrooms data:', classrooms);
-                
-                const result = await saveToGoogleSheets('saveClassrooms', { classrooms });
-                
-                hideLoading();
-                
-                // Return to manage section
-                document.getElementById('edit-classroom-section').classList.add('hidden');
-                document.getElementById('manage-section').classList.remove('hidden');
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: '✅ บันทึกข้อมูลสำเร็จ',
-                    html: `<div class="text-left">
-                        <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                        <p>✅ บันทึกลง Google Sheets สำเร็จ</p>
-                        <p class="mt-2 text-sm text-gray-600">ข้อมูลถูกซิงค์แล้ว</p>
-                    </div>`,
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-                
-            } catch (error) {
-                hideLoading();
-                console.error('❌ Error saving classroom data:', error);
-                
-                // Return to manage section even if save failed
-                document.getElementById('edit-classroom-section').classList.add('hidden');
-                document.getElementById('manage-section').classList.remove('hidden');
-                
-                Swal.fire({
-                    icon: 'warning',
-                    title: '⚠️ บันทึกข้อมูลบางส่วนสำเร็จ',
-                    html: `<div class="text-left">
-                        <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                        <p>❌ ไม่สามารถบันทึกลง Google Sheets</p>
-                        <p class="mt-2 text-sm text-red-600">ข้อผิดพลาด: ${error.message}</p>
-                        <p class="mt-2 text-sm text-blue-600">ข้อมูลจะถูกซิงค์เมื่อการเชื่อมต่อกลับมาปกติ</p>
-                    </div>`,
-                    confirmButtonText: 'ตกลง'
-                });
-            }
-        }
-
-        function cancelEditClassroom() {
-            // Return to manage section without saving
-            document.getElementById('edit-classroom-section').classList.add('hidden');
-            document.getElementById('manage-section').classList.remove('hidden');
-            currentEditingClassroomId = null;
-        }
-
-        async function deleteClassroom(classroomId) {
-            Swal.fire({
-                title: 'ยืนยันการลบ',
-                text: 'คุณต้องการลบห้องเรียนนี้หรือไม่?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'ลบ',
-                cancelButtonText: 'ยกเลิก'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    const originalClassrooms = [...classrooms];
-                    classrooms = classrooms.filter(c => c.id !== classroomId);
-                    
-                    try {
-                        const result = await saveToGoogleSheets('saveClassrooms', { classrooms });
-                        displayClassrooms();
-                        updateClassroomSelects();
-                        saveToLocalStorage();
-                        
-                        Swal.fire({
-                            icon: 'success',
-                            title: '✅ ลบสำเร็จ',
-                            html: `<div class="text-left">
-                                <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                                <p>✅ บันทึกลง Google Sheets สำเร็จ</p>
-                            </div>`,
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } catch (error) {
-                        // Don't restore data, keep the deletion
-                        displayClassrooms();
-                        updateClassroomSelects();
-                        saveToLocalStorage();
-                        
-                        Swal.fire({
-                            icon: 'warning',
-                            title: '⚠️ ลบสำเร็จ',
-                            html: `<div class="text-left">
-                                <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                                <p>❌ ไม่สามารถบันทึกลง Google Sheets</p>
-                                <p class="mt-2 text-sm text-red-600">ข้อผิดพลาด: ${error.message}</p>
-                            </div>`,
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                    }
-                }
-            });
-        }
-
-        function reorderStudentNumbers(classroom) {
-            // แยกนักเรียนชายและหญิงตามคำนำหน้าชื่อ
-            const maleStudents = [];
-            const femaleStudents = [];
-            
-            classroom.students.forEach(student => {
-                if (isFemaleStudent(student)) {
-                    femaleStudents.push(student);
-                } else {
-                    maleStudents.push(student);
-                }
-            });
-            
-            // เรียงตามเลขประจำตัวนักเรียนในแต่ละกลุ่ม
-            maleStudents.sort((a, b) => a.studentId.localeCompare(b.studentId));
-            femaleStudents.sort((a, b) => a.studentId.localeCompare(b.studentId));
-            
-            // กำหนดเลขที่ใหม่ (ชายก่อน แล้วหญิง)
-            let currentNumber = 1;
-            
-            // กำหนดเลขที่ให้นักเรียนชาย
-            maleStudents.forEach(student => {
-                student.number = currentNumber++;
-            });
-            
-            // กำหนดเลขที่ให้นักเรียนหญิง
-            femaleStudents.forEach(student => {
-                student.number = currentNumber++;
-            });
-            
-            // รวมกลับเข้าไปในห้องเรียน
-            classroom.students = [...maleStudents, ...femaleStudents];
-        }
-
-        function isFemaleStudent(student) {
-            // ตรวจสอบคำนำหน้าชื่อที่บ่งบอกเพศหญิง
-            const femaleIndicators = ['เด็กหญิง', 'นางสาว', 'ด.ญ.', 'น.ส.'];
-            const name = student.name;
-            
-            // ตรวจสอบว่าชื่อมีคำนำหน้าที่บ่งบอกเพศหญิงหรือไม่
-            for (let indicator of femaleIndicators) {
-                if (name.includes(indicator)) {
-                    return true;
-                }
-            }
-            
-            return false; // ถ้าไม่พบคำนำหน้าหญิง ถือว่าเป็นชาย
-        }
-
-        // Subject management
-        async function addSubject() {
-            const input = document.getElementById('new-subject');
-            const name = input.value.trim();
-            
-            if (name) {
-                const subject = {
-                    id: Date.now(),
-                    name: name
-                };
-                subjects.push(subject);
-                input.value = '';
-                
-                // Update display immediately
-                displaySubjects();
-                updateSubjectSelects();
-                saveToLocalStorage();
-                
-                try {
-                    const result = await saveToGoogleSheets('saveSubjects', { subjects });
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: '✅ เพิ่มรายวิชาสำเร็จ',
-                        html: `<div class="text-left">
-                            <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                            <p>✅ บันทึกลง Google Sheets สำเร็จ</p>
-                        </div>`,
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                } catch (error) {
-                    // Keep the subject in local array even if save failed
-                    console.error('❌ Failed to save to Google Sheets:', error);
-                    Swal.fire({
-                        icon: 'warning',
-                        title: '⚠️ เพิ่มรายวิชาสำเร็จ',
-                        html: `<div class="text-left">
-                            <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                            <p>❌ ไม่สามารถบันทึกลง Google Sheets</p>
-                            <p class="mt-2 text-sm text-red-600">ข้อผิดพลาด: ${error.message}</p>
-                        </div>`,
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                }
-            }
-        }
-
-        function displaySubjects() {
-            const container = document.getElementById('subject-list');
-            container.innerHTML = '';
-            
-            if (subjects.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-center py-4">ยังไม่มีรายวิชา</p>';
-                return;
-            }
-            
-            // Sort subjects alphabetically
+            // เรียงลำดับและเพิ่มตัวเลือก
+            const sortedClassrooms = [...classrooms].sort((a, b) => a.name.localeCompare(b.name, 'th'));
             const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'th'));
             
+            sortedClassrooms.forEach(classroom => {
+                const option = document.createElement('option');
+                option.value = classroom.id;
+                option.textContent = classroom.name;
+                classroomSelect.appendChild(option);
+            });
+            
             sortedSubjects.forEach(subject => {
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center border border-gray-200 rounded-lg p-4';
-                div.innerHTML = `
-                    <span class="font-medium text-gray-800">${subject.name}</span>
-                    <div class="flex gap-2">
-                        <button onclick="editSubject(${subject.id})" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
-                            <i class="fas fa-edit"></i> แก้ไข
-                        </button>
-                        <button onclick="deleteSubject(${subject.id})" class="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600">
-                            <i class="fas fa-trash"></i> ลบ
-                        </button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        async function editSubject(subjectId) {
-            const subject = subjects.find(s => s.id === subjectId);
-            
-            Swal.fire({
-                title: 'แก้ไขรายวิชา',
-                input: 'text',
-                inputValue: subject.name,
-                showCancelButton: true,
-                confirmButtonText: 'บันทึก',
-                cancelButtonText: 'ยกเลิก'
-            }).then(async (result) => {
-                if (result.isConfirmed && result.value.trim()) {
-                    const originalName = subject.name;
-                    subject.name = result.value.trim();
-                    
-                    try {
-                        const result = await saveToGoogleSheets('saveSubjects', { subjects });
-                        displaySubjects();
-                        updateSubjectSelects();
-                        saveToLocalStorage();
-                        
-                        Swal.fire({
-                            icon: 'success',
-                            title: '✅ แก้ไขสำเร็จ',
-                            html: `<div class="text-left">
-                                <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                                <p>✅ บันทึกลง Google Sheets สำเร็จ</p>
-                            </div>`,
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } catch (error) {
-                        // Don't restore, keep the changes
-                        displaySubjects();
-                        updateSubjectSelects();
-                        saveToLocalStorage();
-                        
-                        Swal.fire({
-                            icon: 'warning',
-                            title: '⚠️ แก้ไขสำเร็จ',
-                            html: `<div class="text-left">
-                                <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                                <p>❌ ไม่สามารถบันทึกลง Google Sheets</p>
-                                <p class="mt-2 text-sm text-red-600">ข้อผิดพลาด: ${error.message}</p>
-                            </div>`,
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                    }
-                }
-            });
-        }
-
-        async function deleteSubject(subjectId) {
-            Swal.fire({
-                title: 'ยืนยันการลบ',
-                text: 'คุณต้องการลบรายวิชานี้หรือไม่?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'ลบ',
-                cancelButtonText: 'ยกเลิก'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    const originalSubjects = [...subjects];
-                    subjects = subjects.filter(s => s.id !== subjectId);
-                    
-                    try {
-                        const result = await saveToGoogleSheets('saveSubjects', { subjects });
-                        displaySubjects();
-                        updateSubjectSelects();
-                        saveToLocalStorage();
-                        
-                        Swal.fire({
-                            icon: 'success',
-                            title: '✅ ลบสำเร็จ',
-                            html: `<div class="text-left">
-                                <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                                <p>✅ บันทึกลง Google Sheets สำเร็จ</p>
-                            </div>`,
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } catch (error) {
-                        // Don't restore data, keep the deletion
-                        displaySubjects();
-                        updateSubjectSelects();
-                        saveToLocalStorage();
-                        
-                        Swal.fire({
-                            icon: 'warning',
-                            title: '⚠️ ลบสำเร็จ',
-                            html: `<div class="text-left">
-                                <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                                <p>❌ ไม่สามารถบันทึกลง Google Sheets</p>
-                                <p class="mt-2 text-sm text-red-600">ข้อผิดพลาด: ${error.message}</p>
-                            </div>`,
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                    }
-                }
-            });
-        }
-
-        // Attendance management
-        function loadAttendanceData() {
-            updateClassroomSelects();
-            updateSubjectSelects();
-        }
-
-        function resetAttendanceOnDateChange() {
-            // รีเซ็ตห้องเรียนและรายวิชาเป็นค่าเริ่มต้น
-            document.getElementById('attendance-classroom').value = '';
-            document.getElementById('attendance-subject').value = '';
-            
-            // ซ่อนรายชื่อนักเรียน
-            document.getElementById('student-list').classList.add('hidden');
-        }
-
-        function resetAttendanceStatus() {
-            // รีเซ็ตสถานะการเข้าเรียนทั้งหมดเป็น "มาเรียน" เมื่อเปลี่ยนวันที่
-            document.querySelectorAll('.status-btn').forEach(btn => {
-                btn.classList.remove('active');
-                btn.classList.remove('bg-green-600', 'bg-red-600', 'bg-purple-600', 'bg-orange-600', 'bg-yellow-600');
-                btn.classList.add('bg-gray-200');
-                btn.removeAttribute('data-selected-status');
-            });
-            
-            // ตั้งค่าสถานะ "มาเรียน" เป็นค่าเริ่มต้น
-            document.querySelectorAll('[data-status="present"]').forEach(btn => {
-                btn.classList.remove('bg-gray-200');
-                btn.classList.add('active', 'bg-green-500');
-                btn.setAttribute('data-selected-status', 'present');
-            });
-        }
-
-        function updateClassroomSelects() {
-            const selects = ['attendance-classroom', 'history-classroom'];
-            selects.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                select.innerHTML = '<option value="">เลือกห้องเรียน</option>';
-                classrooms.forEach(classroom => {
-                    const option = document.createElement('option');
-                    option.value = classroom.id;
-                    option.textContent = classroom.name;
-                    select.appendChild(option);
-                });
-            });
-        }
-
-        function updateSubjectSelects() {
-            const selects = ['attendance-subject', 'history-subject'];
-            selects.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                select.innerHTML = '<option value="">เลือกรายวิชา</option>';
-                subjects.forEach(subject => {
-                    const option = document.createElement('option');
-                    option.value = subject.id;
-                    option.textContent = subject.name;
-                    select.appendChild(option);
-                });
-            });
-        }
-
-        function updateStudentList() {
-            const classroomId = document.getElementById('attendance-classroom').value;
-            const subjectId = document.getElementById('attendance-subject').value;
-            
-            if (classroomId && subjectId) {
-                const classroom = classrooms.find(c => c.id == classroomId);
-                const studentListDiv = document.getElementById('student-list');
-                const tableBody = document.getElementById('student-table-body');
-                
-                if (classroom && classroom.students.length > 0) {
-                    tableBody.innerHTML = '';
-                    classroom.students.forEach(student => {
-                        const row = document.createElement('tr');
-                        row.className = 'border-b border-gray-200';
-                        row.innerHTML = `
-                            <td class="px-4 py-3">${student.number}</td>
-                            <td class="px-4 py-3">${student.studentId}</td>
-                            <td class="px-4 py-3">${student.name}</td>
-                            <td class="px-4 py-3 text-center">
-                                <div class="flex justify-center gap-2">
-                                    <button onclick="setAttendanceStatus(${student.id}, 'present')" 
-                                            class="status-btn w-8 h-8 rounded-full bg-green-500 text-white hover:bg-green-600 transition-all active" 
-                                            data-student="${student.id}" data-status="present" data-selected-status="present" title="มาเรียน">
-                                        /
-                                    </button>
-                                    <button onclick="setAttendanceStatus(${student.id}, 'absent')" 
-                                            class="status-btn w-8 h-8 rounded-full bg-gray-200 text-gray-600 hover:bg-red-500 hover:text-white transition-all" 
-                                            data-student="${student.id}" data-status="absent" title="ขาดเรียน">
-                                        ข
-                                    </button>
-                                    <button onclick="setAttendanceStatus(${student.id}, 'business')" 
-                                            class="status-btn w-8 h-8 rounded-full bg-gray-200 text-gray-600 hover:bg-purple-500 hover:text-white transition-all" 
-                                            data-student="${student.id}" data-status="business" title="ลากิจ">
-                                        ล
-                                    </button>
-                                    <button onclick="setAttendanceStatus(${student.id}, 'sick')" 
-                                            class="status-btn w-8 h-8 rounded-full bg-gray-200 text-gray-600 hover:bg-orange-500 hover:text-white transition-all" 
-                                            data-student="${student.id}" data-status="sick" title="ลาป่วย">
-                                        ป
-                                    </button>
-                                    <button onclick="setAttendanceStatus(${student.id}, 'activity')" 
-                                            class="status-btn w-8 h-8 rounded-full bg-gray-200 text-gray-600 hover:bg-yellow-500 hover:text-white transition-all" 
-                                            data-student="${student.id}" data-status="activity" title="กิจกรรม">
-                                        ก
-                                    </button>
-                                </div>
-                            </td>
-                        `;
-                        tableBody.appendChild(row);
-                    });
-                    studentListDiv.classList.remove('hidden');
-                } else {
-                    studentListDiv.classList.add('hidden');
-                }
-            } else {
-                document.getElementById('student-list').classList.add('hidden');
-            }
-        }
-
-        function setAttendanceStatus(studentId, status) {
-            // Remove active class from all buttons for this student and reset to gray
-            document.querySelectorAll(`[data-student="${studentId}"]`).forEach(btn => {
-                btn.classList.remove('active');
-                btn.classList.remove('bg-green-500', 'bg-red-500', 'bg-purple-500', 'bg-orange-500', 'bg-yellow-500');
-                btn.classList.remove('text-white');
-                btn.classList.add('bg-gray-200', 'text-gray-600');
-                btn.removeAttribute('data-selected-status');
-            });
-            
-            // Add active class to selected button
-            const selectedBtn = document.querySelector(`[data-student="${studentId}"][data-status="${status}"]`);
-            selectedBtn.classList.add('active');
-            
-            // Update button colors based on status
-            const colorMap = {
-                'present': 'bg-green-500',
-                'absent': 'bg-red-500',
-                'business': 'bg-purple-500',
-                'sick': 'bg-orange-500',
-                'activity': 'bg-yellow-500'
-            };
-            
-            selectedBtn.classList.remove('bg-gray-200', 'text-gray-600');
-            selectedBtn.classList.add(colorMap[status], 'text-white');
-            
-            // Store the status
-            selectedBtn.setAttribute('data-selected-status', status);
-        }
-
-        async function saveAttendance() {
-            const date = document.getElementById('attendance-date').value;
-            const classroomId = document.getElementById('attendance-classroom').value;
-            const subjectId = document.getElementById('attendance-subject').value;
-            
-            if (!date || !classroomId || !subjectId) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'ข้อมูลไม่ครบถ้วน',
-                    text: 'กรุณาเลือกวันที่ ห้องเรียน และรายวิชา'
-                });
-                return;
-            }
-            
-            const classroom = classrooms.find(c => c.id == classroomId);
-            const subject = subjects.find(s => s.id == subjectId);
-            const attendanceData = [];
-            
-            classroom.students.forEach(student => {
-                const statusBtn = document.querySelector(`[data-student="${student.id}"].active`);
-                const status = statusBtn ? statusBtn.getAttribute('data-selected-status') : 'present';
-                
-                attendanceData.push({
-                    studentId: student.id,
-                    studentNumber: student.number,
-                    studentIdNumber: student.studentId,
-                    studentName: student.name,
-                    status: status
-                });
-            });
-            
-            const record = {
-                id: Date.now(),
-                date: formatDateThai(date),
-                classroomId: classroomId,
-                classroomName: classroom.name,
-                subjectId: subjectId,
-                subjectName: subject.name,
-                attendance: attendanceData
-            };
-            
-            // Remove existing record for same date, classroom, and subject
-            attendanceRecords = attendanceRecords.filter(r => 
-                !(r.date === record.date && r.classroomId == classroomId && r.subjectId == subjectId)
-            );
-            
-            attendanceRecords.push(record);
-            
-            try {
-                const result = await saveToGoogleSheets('saveAttendance', { attendanceRecord: record });
-                saveToLocalStorage();
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: '✅ บันทึกการเข้าเรียนสำเร็จ',
-                    html: `<div class="text-left">
-                        <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                        <p>✅ บันทึกลง Google Sheets สำเร็จ</p>
-                        <p class="mt-2 text-sm text-gray-600">วันที่: ${record.date}</p>
-                        <p class="text-sm text-gray-600">ห้อง: ${classroom.name}</p>
-                        <p class="text-sm text-gray-600">วิชา: ${subject.name}</p>
-                    </div>`,
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            } catch (error) {
-                // Keep the record in local array and save to localStorage
-                saveToLocalStorage();
-                
-                Swal.fire({
-                    icon: 'warning',
-                    title: '⚠️ บันทึกการเข้าเรียนบางส่วนสำเร็จ',
-                    html: `<div class="text-left">
-                        <p>✅ บันทึกในเครื่องสำเร็จ</p>
-                        <p>❌ ไม่สามารถบันทึกลง Google Sheets</p>
-                        <p class="mt-2 text-sm text-red-600">ข้อผิดพลาด: ${error.message}</p>
-                        <p class="mt-2 text-sm text-blue-600">ข้อมูลจะถูกซิงค์เมื่อการเชื่อมต่อกลับมาปกติ</p>
-                    </div>`,
-                    confirmButtonText: 'ตกลง'
-                });
-            }
-        }
-
-        // History management
-        function loadHistoryData() {
-            updateClassroomSelects();
-            updateSubjectSelects();
-        }
-
-        function updateHistorySubjects() {
-            const classroomId = document.getElementById('history-classroom').value;
-            const subjectSelect = document.getElementById('history-subject');
-            
-            subjectSelect.innerHTML = '<option value="">เลือกรายวิชา</option>';
-            subjects.forEach(subject => {
                 const option = document.createElement('option');
                 option.value = subject.id;
                 option.textContent = subject.name;
@@ -1832,88 +366,541 @@
             });
         }
 
-        function showAttendanceHistory() {
-            const date = document.getElementById('history-date').value;
-            const classroomId = document.getElementById('history-classroom').value;
-            const subjectId = document.getElementById('history-subject').value;
+        function populateHistoryFilters() {
+            const classroomSelect = document.getElementById('historyClassroom');
+            const subjectSelect = document.getElementById('historySubject');
+            
+            // Clear existing options
+            classroomSelect.innerHTML = '<option value="">ทุกห้องเรียน</option>';
+            subjectSelect.innerHTML = '<option value="">ทุกรายวิชา</option>';
+            
+            // เรียงลำดับและเพิ่มตัวเลือก
+            const sortedClassrooms = [...classrooms].sort((a, b) => a.name.localeCompare(b.name, 'th'));
+            const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'th'));
+            
+            sortedClassrooms.forEach(classroom => {
+                const option = document.createElement('option');
+                option.value = classroom.id;
+                option.textContent = classroom.name;
+                classroomSelect.appendChild(option);
+            });
+            
+            sortedSubjects.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject.id;
+                option.textContent = subject.name;
+                subjectSelect.appendChild(option);
+            });
+        }
+
+        // Attendance functions
+        function loadAttendanceForm() {
+            const date = document.getElementById('attendanceDate').value;
+            const classroomId = document.getElementById('attendanceClassroom').value;
+            const subjectId = document.getElementById('attendanceSubject').value;
             
             if (!date || !classroomId || !subjectId) {
-                document.getElementById('history-results').classList.add('hidden');
+                showMessage('กรุณาเลือกวันที่ ห้องเรียน และรายวิชา', 'error');
+                return;
+            }
+            
+            const classroom = classrooms.find(c => c.id == classroomId);
+            if (!classroom || !classroom.students || classroom.students.length === 0) {
+                showMessage('ไม่พบรายชื่อนักเรียนในห้องเรียนนี้', 'error');
+                return;
+            }
+            
+            currentStudents = classroom.students;
+            renderStudentAttendance();
+            document.getElementById('studentList').classList.remove('hidden');
+        }
+
+        function renderStudentAttendance() {
+            const container = document.getElementById('studentAttendance');
+            container.innerHTML = '';
+            
+            currentStudents.forEach(student => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+                div.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="font-medium text-gray-800">${student.number}.</span>
+                        <span class="text-gray-700">${student.name}</span>
+                        <span class="text-sm text-gray-500">(${student.studentId})</span>
+                    </div>
+                    <div class="flex space-x-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="attendance_${student.id}" value="present" class="mr-2" checked>
+                            <span class="text-green-600">มา</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="attendance_${student.id}" value="absent" class="mr-2">
+                            <span class="text-red-600">ขาด</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="attendance_${student.id}" value="late" class="mr-2">
+                            <span class="text-yellow-600">สาย</span>
+                        </label>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function saveAttendance() {
+            const date = document.getElementById('attendanceDate').value;
+            const classroomId = document.getElementById('attendanceClassroom').value;
+            const subjectId = document.getElementById('attendanceSubject').value;
+            
+            const classroom = classrooms.find(c => c.id == classroomId);
+            const subject = subjects.find(s => s.id == subjectId);
+            
+            const attendance = [];
+            currentStudents.forEach(student => {
+                const status = document.querySelector(`input[name="attendance_${student.id}"]:checked`).value;
+                attendance.push({
+                    studentId: student.id,
+                    studentNumber: student.number,
+                    studentName: student.name,
+                    status: status
+                });
+            });
+            
+            const attendanceRecord = {
+                id: `${date}_${classroomId}_${subjectId}`,
+                date: date,
+                classroomId: classroomId,
+                classroomName: classroom.name,
+                subjectId: subjectId,
+                subjectName: subject.name,
+                attendance: attendance
+            };
+            
+            try {
+                showLoading('กำลังบันทึกข้อมูล...');
+                
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'saveAttendance',
+                        attendanceRecord: attendanceRecord
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update local data
+                    const existingIndex = attendanceRecords.findIndex(r => r.id === attendanceRecord.id);
+                    if (existingIndex >= 0) {
+                        attendanceRecords[existingIndex] = attendanceRecord;
+                    } else {
+                        attendanceRecords.push(attendanceRecord);
+                    }
+                    
+                    showMessage('บันทึกการเข้าเรียนสำเร็จ', 'success');
+                    document.getElementById('studentList').classList.add('hidden');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการบันทึก: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving attendance:', error);
+                showMessage('เกิดข้อผิดพลาดในการบันทึก', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Management functions
+        async function addClassroom() {
+            const name = document.getElementById('classroomName').value.trim();
+            if (!name) {
+                showMessage('กรุณาใส่ชื่อห้องเรียน', 'error');
+                return;
+            }
+            
+            const newClassroom = {
+                id: Date.now(),
+                name: name,
+                students: []
+            };
+            
+            classrooms.push(newClassroom);
+            await saveClassrooms();
+            document.getElementById('classroomName').value = '';
+            renderClassroomManagement();
+            populateAttendanceSelects();
+        }
+
+        async function addSubject() {
+            const name = document.getElementById('subjectName').value.trim();
+            if (!name) {
+                showMessage('กรุณาใส่ชื่อรายวิชา', 'error');
+                return;
+            }
+            
+            const newSubject = {
+                id: Date.now(),
+                name: name
+            };
+            
+            subjects.push(newSubject);
+            await saveSubjects();
+            document.getElementById('subjectName').value = '';
+            renderSubjectManagement();
+            populateAttendanceSelects();
+        }
+
+        // ฟังก์ชันลบห้องเรียน
+        async function deleteClassroom(id) {
+            if (confirm('คุณต้องการลบห้องเรียนนี้หรือไม่?\n(ข้อมูลการเข้าเรียนที่เกี่ยวข้องจะถูกลบด้วย)')) {
+                try {
+                    showLoading('กำลังลบข้อมูล...');
+                    
+                    // ส่งคำสั่งลบไปยัง Google Apps Script
+                    const response = await fetch(WEB_APP_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'deleteClassroom',
+                            classroomId: id
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // อัปเดตข้อมูลในหน้าเว็บ
+                        classrooms = classrooms.filter(c => c.id !== id);
+                        attendanceRecords = attendanceRecords.filter(a => a.classroomId !== id);
+                        
+                        renderClassroomManagement();
+                        populateAttendanceSelects();
+                        showMessage(`ลบห้องเรียนสำเร็จ (ลบข้อมูลการเข้าเรียน ${result.deletedAttendanceRecords} รายการ)`, 'success');
+                    } else {
+                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting classroom:', error);
+                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        // ฟังก์ชันลบรายวิชา
+        async function deleteSubject(id) {
+            if (confirm('คุณต้องการลบรายวิชานี้หรือไม่?\n(ข้อมูลการเข้าเรียนที่เกี่ยวข้องจะถูกลบด้วย)')) {
+                try {
+                    showLoading('กำลังลบข้อมูล...');
+                    
+                    // ส่งคำสั่งลบไปยัง Google Apps Script
+                    const response = await fetch(WEB_APP_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'deleteSubject',
+                            subjectId: id
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // อัปเดตข้อมูลในหน้าเว็บ
+                        subjects = subjects.filter(s => s.id !== id);
+                        attendanceRecords = attendanceRecords.filter(a => a.subjectId !== id);
+                        
+                        renderSubjectManagement();
+                        populateAttendanceSelects();
+                        showMessage(`ลบรายวิชาสำเร็จ (ลบข้อมูลการเข้าเรียน ${result.deletedAttendanceRecords} รายการ)`, 'success');
+                    } else {
+                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting subject:', error);
+                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+
+        function renderClassroomManagement() {
+            const container = document.getElementById('classroomList');
+            container.innerHTML = '';
+            
+            // เรียงลำดับห้องเรียน
+            const sortedClassrooms = [...classrooms].sort((a, b) => a.name.localeCompare(b.name, 'th'));
+            
+            sortedClassrooms.forEach(classroom => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+                div.innerHTML = `
+                    <div>
+                        <span class="font-medium text-gray-800">${classroom.name}</span>
+                        <span class="text-sm text-gray-500 ml-2">(${classroom.students ? classroom.students.length : 0} คน)</span>
+                    </div>
+                    <div class="space-x-2">
+                        <button onclick="editClassroom(${classroom.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                            แก้ไข
+                        </button>
+                        <button onclick="deleteClassroom(${classroom.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                            ลบ
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderSubjectManagement() {
+            const container = document.getElementById('subjectList');
+            container.innerHTML = '';
+            
+            // เรียงลำดับรายวิชา
+            const sortedSubjects = [...subjects].sort((a, b) => a.name.localeCompare(b.name, 'th'));
+            
+            sortedSubjects.forEach(subject => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+                div.innerHTML = `
+                    <span class="font-medium text-gray-800">${subject.name}</span>
+                    <div class="space-x-2">
+                        <button onclick="editSubject(${subject.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                            แก้ไข
+                        </button>
+                        <button onclick="deleteSubject(${subject.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                            ลบ
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function editClassroom(id) {
+            const classroom = classrooms.find(c => c.id === id);
+            if (!classroom) return;
+            
+            const newName = prompt('แก้ไขชื่อห้องเรียน:', classroom.name);
+            if (newName && newName.trim() !== classroom.name) {
+                classroom.name = newName.trim();
+                saveClassrooms();
+                renderClassroomManagement();
+                populateAttendanceSelects();
+            }
+        }
+
+        function editSubject(id) {
+            const subject = subjects.find(s => s.id === id);
+            if (!subject) return;
+            
+            const newName = prompt('แก้ไขชื่อรายวิชา:', subject.name);
+            if (newName && newName.trim() !== subject.name) {
+                subject.name = newName.trim();
+                saveSubjects();
+                renderSubjectManagement();
+                populateAttendanceSelects();
+            }
+        }
+
+        async function saveClassrooms() {
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'saveClassrooms',
+                        classrooms: classrooms
+                    })
+                });
+                
+                const result = await response.json();
+                if (!result.success) {
+                    showMessage('เกิดข้อผิดพลาดในการบันทึกห้องเรียน: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving classrooms:', error);
+                showMessage('เกิดข้อผิดพลาดในการบันทึกห้องเรียน', 'error');
+            }
+        }
+
+        async function saveSubjects() {
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'saveSubjects',
+                        subjects: subjects
+                    })
+                });
+                
+                const result = await response.json();
+                if (!result.success) {
+                    showMessage('เกิดข้อผิดพลาดในการบันทึกรายวิชา: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving subjects:', error);
+                showMessage('เกิดข้อผิดพลาดในการบันทึกรายวิชา', 'error');
+            }
+        }
+
+        // History functions
+        function filterHistory() {
+            const date = document.getElementById('historyDate').value;
+            const classroomId = document.getElementById('historyClassroom').value;
+            const subjectId = document.getElementById('historySubject').value;
+            
+            let filteredRecords = attendanceRecords;
+            
+            if (date) {
+                filteredRecords = filteredRecords.filter(record => record.date === date);
+            }
+            
+            if (classroomId) {
+                filteredRecords = filteredRecords.filter(record => record.classroomId == classroomId);
+            }
+            
+            if (subjectId) {
+                filteredRecords = filteredRecords.filter(record => record.subjectId == subjectId);
+            }
+            
+            renderHistoryResults(filteredRecords);
+        }
+
+        function renderHistoryResults(records) {
+            const container = document.getElementById('historyResults');
+            
+            if (records.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">ไม่พบข้อมูลการเข้าเรียน</p>';
+                return;
+            }
+            
+            let html = '<div class="space-y-4">';
+            
+            records.forEach(record => {
+                const presentCount = record.attendance.filter(a => a.status === 'present').length;
+                const absentCount = record.attendance.filter(a => a.status === 'absent').length;
+                const lateCount = record.attendance.filter(a => a.status === 'late').length;
+                
+                html += `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="font-semibold text-lg text-gray-800">${record.date}</h3>
+                                <p class="text-gray-600">${record.classroomName} - ${record.subjectName}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-500">
+                                    <span class="text-green-600">มา: ${presentCount}</span> |
+                                    <span class="text-red-600">ขาด: ${absentCount}</span> |
+                                    <span class="text-yellow-600">สาย: ${lateCount}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <h4 class="font-medium text-green-600 mb-2">มาเรียน (${presentCount})</h4>
+                                <div class="text-sm text-gray-700">
+                                    ${record.attendance.filter(a => a.status === 'present').map(a => `${a.studentNumber}. ${a.studentName}`).join('<br>')}
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-red-600 mb-2">ขาดเรียน (${absentCount})</h4>
+                                <div class="text-sm text-gray-700">
+                                    ${record.attendance.filter(a => a.status === 'absent').map(a => `${a.studentNumber}. ${a.studentName}`).join('<br>')}
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-yellow-600 mb-2">มาสาย (${lateCount})</h4>
+                                <div class="text-sm text-gray-700">
+                                    ${record.attendance.filter(a => a.status === 'late').map(a => `${a.studentNumber}. ${a.studentName}`).join('<br>')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // ฟังก์ชันลบข้อมูลการเข้าเรียนที่เลือก
+        async function deleteSelectedAttendance() {
+            const date = document.getElementById('historyDate').value;
+            const classroomId = document.getElementById('historyClassroom').value;
+            const subjectId = document.getElementById('historySubject').value;
+            
+            if (!date || !classroomId || !subjectId) {
+                showMessage('กรุณาเลือกวันที่ ห้องเรียน และรายวิชาที่ต้องการลบ', 'error');
                 return;
             }
             
             const classroom = classrooms.find(c => c.id == classroomId);
             const subject = subjects.find(s => s.id == subjectId);
-            const selectedDateThai = formatDateThai(date);
             
-            // ค้นหาข้อมูลการเข้าเรียนที่ตรงกับเงื่อนไขทั้ง 3
-            const record = attendanceRecords.find(r => 
-                r.date === selectedDateThai && 
-                r.classroomId == classroomId && 
-                r.subjectId == subjectId
-            );
-            
-            if (!record) {
-                document.getElementById('history-results').classList.add('hidden');
-                Swal.fire({
-                    icon: 'info',
-                    title: 'ไม่พบข้อมูล',
-                    html: `ไม่พบประวัติการเข้าเรียนสำหรับ<br>
-                           <strong>วันที่:</strong> ${selectedDateThai}<br>
-                           <strong>ห้องเรียน:</strong> ${classroom.name}<br>
-                           <strong>รายวิชา:</strong> ${subject.name}`
-                });
+            if (!classroom || !subject) {
+                showMessage('ไม่พบข้อมูลห้องเรียนหรือรายวิชา', 'error');
                 return;
             }
             
-            // Create header for single date
-            const header = document.getElementById('history-header');
-            header.innerHTML = `
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">เลขที่</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">เลขประจำตัว</th>
-                <th class="px-4 py-3 text-left text-sm font-medium text-gray-700">ชื่อ-สกุล</th>
-                <th class="px-4 py-3 text-center text-sm font-medium text-gray-700">${record.date}</th>
-            `;
+            const confirmMessage = `คุณต้องการลบข้อมูลการเข้าเรียนหรือไม่?\n\nวันที่: ${date}\nห้องเรียน: ${classroom.name}\nรายวิชา: ${subject.name}`;
             
-            // Create table body
-            const tableBody = document.getElementById('history-table-body');
-            tableBody.innerHTML = '';
-            
-            if (classroom && classroom.students.length > 0) {
-                classroom.students.forEach(student => {
-                    const row = document.createElement('tr');
-                    row.className = 'border-b border-gray-200';
+            if (confirm(confirmMessage)) {
+                try {
+                    showLoading('กำลังลบข้อมูล...');
                     
-                    const attendance = record.attendance.find(a => a.studentId === student.id);
-                    const status = attendance ? attendance.status : 'present';
+                    const response = await fetch(WEB_APP_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'deleteAttendanceRecord',
+                            date: date,
+                            classroomId: classroomId,
+                            subjectId: subjectId
+                        })
+                    });
+
+                    const result = await response.json();
                     
-                    const statusMap = {
-                        'present': { symbol: '/', color: 'bg-green-100 text-green-800' },
-                        'absent': { symbol: 'ข', color: 'bg-red-100 text-red-800' },
-                        'business': { symbol: 'ล', color: 'bg-purple-100 text-purple-800' },
-                        'sick': { symbol: 'ป', color: 'bg-orange-100 text-orange-800' },
-                        'activity': { symbol: 'ก', color: 'bg-yellow-100 text-yellow-800' }
-                    };
-                    
-                    const statusInfo = statusMap[status];
-                    
-                    row.innerHTML = `
-                        <td class="px-4 py-3">${student.number}</td>
-                        <td class="px-4 py-3">${student.studentId}</td>
-                        <td class="px-4 py-3">${student.name}</td>
-                        <td class="px-4 py-3 text-center">
-                            <span class="inline-block w-8 h-8 rounded-full ${statusInfo.color} flex items-center justify-center text-sm font-medium">
-                                ${statusInfo.symbol}
-                            </span>
-                        </td>
-                    `;
-                    
-                    tableBody.appendChild(row);
-                });
+                    if (result.success) {
+                        // อัปเดตข้อมูลในหน้าเว็บ
+                        attendanceRecords = attendanceRecords.filter(record => 
+                            !(record.date === date && record.classroomId == classroomId && record.subjectId == subjectId)
+                        );
+                        
+                        // รีเฟรชผลการค้นหา
+                        filterHistory();
+                        showMessage('ลบข้อมูลการเข้าเรียนสำเร็จ', 'success');
+                    } else {
+                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting attendance record:', error);
+                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+                } finally {
+                    hideLoading();
+                }
             }
-            
-            document.getElementById('history-results').classList.remove('hidden');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9739d72b212e5ff8',t:'MTc1NTk0NDA0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'973b4a1bf57f5f2e',t:'MTc1NTk1OTIzNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
