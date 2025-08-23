@@ -61,11 +61,11 @@
                     <i class="fas fa-check-circle mr-2"></i>
                     บันทึกการเข้าเรียน
                 </button>
-                <button onclick="showSection('manage')" class="nav-btn flex items-center px-6 py-3 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-all">
+                <button onclick="showSection('manage')" class="nav-btn flex items-center px-6 py-3 rounded-lg bg-gray-300 text-gray-600 hover:bg-green-600 hover:text-white transition-all">
                     <i class="fas fa-cogs mr-2"></i>
                     จัดการข้อมูล
                 </button>
-                <button onclick="showSection('history')" class="nav-btn flex items-center px-6 py-3 rounded-lg bg-purple-500 text-white hover:bg-purple-600 transition-all">
+                <button onclick="showSection('history')" class="nav-btn flex items-center px-6 py-3 rounded-lg bg-gray-300 text-gray-600 hover:bg-purple-600 hover:text-white transition-all">
                     <i class="fas fa-history mr-2"></i>
                     ประวัติการเข้าเรียน
                 </button>
@@ -387,7 +387,7 @@
                 console.log('🔍 Starting debug process...');
                 
                 // ตรวจสอบ URL ก่อน
-                if (WEB_APP_URL === 'https://script.google.com/macros/s/AKfycbwx_l9dnBVP5daaTfxyP8QYdOkClRBdwvUvN9-o51-uI9OGUNl2t6xf3u3I9xPK9p0/exec') {
+                if (WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
                     hideLoading();
                     Swal.fire({
                         icon: 'error',
@@ -464,7 +464,7 @@
                 console.log('📍 URL:', WEB_APP_URL);
                 
                 // ตรวจสอบ URL ก่อน
-                if (WEB_APP_URL === 'https://script.google.com/macros/s/AKfycbwx_l9dnBVP5daaTfxyP8QYdOkClRBdwvUvN9-o51-uI9OGUNl2t6xf3u3I9xPK9p0/exec') {
+                if (WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
                     throw new Error('กรุณาตั้งค่า Google Apps Script URL ก่อน');
                 }
                 
@@ -602,7 +602,7 @@
             try {
                 console.log('🔍 Testing connection to:', WEB_APP_URL);
                 
-                if (WEB_APP_URL === 'https://script.google.com/macros/s/AKfycbwx_l9dnBVP5daaTfxyP8QYdOkClRBdwvUvN9-o51-uI9OGUNl2t6xf3u3I9xPK9p0/exec') {
+                if (WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
                     return false;
                 }
                 
@@ -628,7 +628,7 @@
                 showLoading();
                 
                 // ตรวจสอบ URL ก่อน
-                if (WEB_APP_URL === 'https://script.google.com/macros/s/AKfycbwx_l9dnBVP5daaTfxyP8QYdOkClRBdwvUvN9-o51-uI9OGUNl2t6xf3u3I9xPK9p0/exec') {
+                if (WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
                     hideLoading();
                     updateConnectionStatus(false, 'URL ยังไม่ได้ตั้งค่า');
                     loadDataFromLocalStorage();
@@ -824,6 +824,7 @@
                 event.target.classList.remove('bg-gray-300', 'text-gray-600');
                 event.target.classList.add('bg-blue-600', 'hover:bg-blue-700', 'text-white', 'shadow-lg', 'transform', 'scale-105');
                 loadAttendanceData();
+                resetAttendanceForm();
             } else if (sectionName === 'manage') {
                 event.target.classList.remove('bg-gray-300', 'text-gray-600');
                 event.target.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white', 'shadow-lg', 'transform', 'scale-105');
@@ -833,7 +834,24 @@
                 event.target.classList.remove('bg-gray-300', 'text-gray-600');
                 event.target.classList.add('bg-purple-600', 'hover:bg-purple-700', 'text-white', 'shadow-lg', 'transform', 'scale-105');
                 loadHistoryData();
+                resetHistoryForm();
             }
+        }
+
+        function resetAttendanceForm() {
+            // รีเซ็ตฟอร์มบันทึกการเข้าเรียน
+            document.getElementById('attendance-date').value = formatDate(new Date());
+            document.getElementById('attendance-classroom').value = '';
+            document.getElementById('attendance-subject').value = '';
+            document.getElementById('student-list').classList.add('hidden');
+        }
+
+        function resetHistoryForm() {
+            // รีเซ็ตฟอร์มประวัติการเข้าเรียน
+            document.getElementById('history-date').value = '';
+            document.getElementById('history-classroom').value = '';
+            document.getElementById('history-subject').value = '';
+            document.getElementById('history-results').classList.add('hidden');
         }
 
         // Classroom management
@@ -1897,7 +1915,5 @@
             document.getElementById('history-results').classList.remove('hidden');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9738dd1b54a99c51',t:'MTc1NTkzMzc5Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9739d72b212e5ff8',t:'MTc1NTk0NDA0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
-
-
