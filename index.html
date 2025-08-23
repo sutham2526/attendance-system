@@ -14,6 +14,8 @@
         .status-btn { transition: all 0.3s ease; }
         .status-btn.active { transform: scale(1.1); }
         .loading { opacity: 0.6; pointer-events: none; }
+        .nav-btn { transition: all 0.3s ease; }
+        .nav-btn:hover { transform: translateY(-2px); }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -300,7 +302,7 @@
         let attendanceRecords = [];
         
         // ⚠️ สำคัญ: เปลี่ยน URL นี้เป็น URL ของ Google Apps Script ของคุณ
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwx_l9dnBVP5daaTfxyP8QYdOkClRBdwvUvN9-o51-uI9OGUNl2t6xf3u3I9xPK9p0/exec';
+        const WEB_APP_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
@@ -626,7 +628,7 @@
                 showLoading();
                 
                 // ตรวจสอบ URL ก่อน
-                if (WEB_APP_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                if (WEB_APP_URL === 'https://script.google.com/macros/s/AKfycbwx_l9dnBVP5daaTfxyP8QYdOkClRBdwvUvN9-o51-uI9OGUNl2t6xf3u3I9xPK9p0/exec') {
                     hideLoading();
                     updateConnectionStatus(false, 'URL ยังไม่ได้ตั้งค่า');
                     loadDataFromLocalStorage();
@@ -789,7 +791,10 @@
         }
 
         function setupEventListeners() {
-            document.getElementById('attendance-date').addEventListener('change', resetAttendanceStatus);
+            document.getElementById('attendance-date').addEventListener('change', function() {
+                resetAttendanceOnDateChange();
+                resetAttendanceStatus();
+            });
             document.getElementById('attendance-classroom').addEventListener('change', updateStudentList);
             document.getElementById('attendance-subject').addEventListener('change', updateStudentList);
             document.getElementById('history-classroom').addEventListener('change', updateHistorySubjects);
@@ -804,24 +809,29 @@
             });
             document.getElementById(sectionName + '-section').classList.remove('hidden');
             
-            // Update nav buttons
+            // Update nav buttons - รีเซ็ตทุกปุ่มให้เป็นสีอ่อน
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'bg-green-600', 'bg-purple-600');
-                btn.classList.add('bg-gray-400');
+                btn.classList.remove('bg-blue-500', 'bg-blue-600', 'bg-blue-700');
+                btn.classList.remove('bg-green-500', 'bg-green-600', 'bg-green-700');
+                btn.classList.remove('bg-purple-500', 'bg-purple-600', 'bg-purple-700');
+                btn.classList.remove('shadow-lg', 'transform', 'scale-105');
+                btn.classList.add('bg-gray-300', 'text-gray-600');
+                btn.classList.remove('text-white');
             });
             
+            // เพิ่มสีเด่นให้ปุ่มที่เลือก
             if (sectionName === 'attendance') {
-                event.target.classList.remove('bg-gray-400');
-                event.target.classList.add('bg-blue-600');
+                event.target.classList.remove('bg-gray-300', 'text-gray-600');
+                event.target.classList.add('bg-blue-600', 'hover:bg-blue-700', 'text-white', 'shadow-lg', 'transform', 'scale-105');
                 loadAttendanceData();
             } else if (sectionName === 'manage') {
-                event.target.classList.remove('bg-gray-400');
-                event.target.classList.add('bg-green-600');
+                event.target.classList.remove('bg-gray-300', 'text-gray-600');
+                event.target.classList.add('bg-green-600', 'hover:bg-green-700', 'text-white', 'shadow-lg', 'transform', 'scale-105');
                 displayClassrooms();
                 displaySubjects();
             } else if (sectionName === 'history') {
-                event.target.classList.remove('bg-gray-400');
-                event.target.classList.add('bg-purple-600');
+                event.target.classList.remove('bg-gray-300', 'text-gray-600');
+                event.target.classList.add('bg-purple-600', 'hover:bg-purple-700', 'text-white', 'shadow-lg', 'transform', 'scale-105');
                 loadHistoryData();
             }
         }
@@ -1559,6 +1569,15 @@
             updateSubjectSelects();
         }
 
+        function resetAttendanceOnDateChange() {
+            // รีเซ็ตห้องเรียนและรายวิชาเป็นค่าเริ่มต้น
+            document.getElementById('attendance-classroom').value = '';
+            document.getElementById('attendance-subject').value = '';
+            
+            // ซ่อนรายชื่อนักเรียน
+            document.getElementById('student-list').classList.add('hidden');
+        }
+
         function resetAttendanceStatus() {
             // รีเซ็ตสถานะการเข้าเรียนทั้งหมดเป็น "มาเรียน" เมื่อเปลี่ยนวันที่
             document.querySelectorAll('.status-btn').forEach(btn => {
@@ -1878,6 +1897,5 @@
             document.getElementById('history-results').classList.remove('hidden');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9730c83b83397335',t:'MTc1NTg0OTA1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9738dd1b54a99c51',t:'MTc1NTkzMzc5Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
-
