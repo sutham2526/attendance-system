@@ -230,6 +230,74 @@
         </div>
     </div>
 
+    <!-- Student Management Modal -->
+    <div id="studentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 id="studentModalTitle" class="text-xl font-bold text-gray-800">จัดการนักเรียน</h3>
+                    <button onclick="closeStudentModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                <!-- Add Student Form -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 class="font-semibold text-gray-800 mb-3">เพิ่มนักเรียนใหม่</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <input type="number" id="studentNumber" placeholder="เลขที่" class="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" id="studentId" placeholder="เลขประจำตัวนักเรียน" class="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <input type="text" id="studentName" placeholder="ชื่อ-สกุล" class="p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <button onclick="addStudent()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
+                            เพิ่ม
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Import from Excel -->
+                <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                    <h4 class="font-semibold text-gray-800 mb-3">นำเข้าจาก Excel</h4>
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <button onclick="importFromExcel()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition-colors">
+                            นำเข้าจาก Excel
+                        </button>
+                        <button onclick="saveImportedStudents()" id="saveImportBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors hidden">
+                            บันทึกข้อมูล
+                        </button>
+                        <button onclick="clearImportedData()" id="clearImportBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors hidden">
+                            ปิด
+                        </button>
+                    </div>
+                    <div id="importPreview" class="mt-4 hidden">
+                        <h5 class="font-medium text-gray-700 mb-2">ข้อมูลที่นำเข้า:</h5>
+                        <div id="importedData" class="max-h-40 overflow-y-auto border border-gray-200 rounded p-2 bg-white"></div>
+                    </div>
+                </div>
+
+                <!-- Student List -->
+                <div>
+                    <h4 class="font-semibold text-gray-800 mb-3">รายชื่อนักเรียน</h4>
+                    <div id="studentListModal" class="space-y-2"></div>
+                </div>
+            </div>
+            
+            <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="closeStudentModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition-colors">
+                    ปิด
+                </button>
+                <button onclick="saveStudentChanges()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition-colors">
+                    บันทึกการเปลี่ยนแปลง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         // Configuration
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwx_l9dnBVP5daaTfxyP8QYdOkClRBdwvUvN9-o51-uI9OGUNl2t6xf3u3I9xPK9p0/exec';
@@ -239,6 +307,8 @@
         let subjects = [];
         let attendanceRecords = [];
         let currentStudents = [];
+        let currentEditingClassroom = null;
+        let importedStudents = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -314,7 +384,7 @@
             try {
                 showLoading('กำลังโหลดข้อมูล...');
                 
-                const response = await fetch(`${WEB_APP_URL}?action=loadAllData`);
+                const response = await fetch(`${WEB_APP_URL}?action=loadAllData&sheetId=1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -329,11 +399,11 @@
                     populateAttendanceSelects();
                     showMessage('โหลดข้อมูลสำเร็จ', 'success');
                 } else {
-                    showMessage('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + result.message, 'error');
+                    showMessage('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + (result.message || 'ไม่ทราบสาเหตุ'), 'error');
                 }
             } catch (error) {
                 console.error('Error loading data:', error);
-                showMessage('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+                showMessage('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message, 'error');
             } finally {
                 hideLoading();
             }
@@ -455,15 +525,23 @@
             const classroom = classrooms.find(c => c.id == classroomId);
             const subject = subjects.find(s => s.id == subjectId);
             
+            if (!classroom || !subject) {
+                showMessage('ไม่พบข้อมูลห้องเรียนหรือรายวิชา', 'error');
+                return;
+            }
+            
             const attendance = [];
             currentStudents.forEach(student => {
-                const status = document.querySelector(`input[name="attendance_${student.id}"]:checked`).value;
-                attendance.push({
-                    studentId: student.id,
-                    studentNumber: student.number,
-                    studentName: student.name,
-                    status: status
-                });
+                const statusElement = document.querySelector(`input[name="attendance_${student.id}"]:checked`);
+                if (statusElement) {
+                    attendance.push({
+                        studentId: student.id,
+                        studentNumber: student.number,
+                        studentName: student.name,
+                        studentIdNumber: student.studentId,
+                        status: statusElement.value
+                    });
+                }
             });
             
             const attendanceRecord = {
@@ -486,7 +564,8 @@
                     },
                     body: JSON.stringify({
                         action: 'saveAttendance',
-                        attendanceRecord: attendanceRecord
+                        attendanceRecord: attendanceRecord,
+                        sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
                     })
                 });
                 
@@ -503,12 +582,17 @@
                     
                     showMessage('บันทึกการเข้าเรียนสำเร็จ', 'success');
                     document.getElementById('studentList').classList.add('hidden');
+                    
+                    // รีเซ็ตฟอร์ม
+                    document.getElementById('attendanceDate').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('attendanceClassroom').value = '';
+                    document.getElementById('attendanceSubject').value = '';
                 } else {
-                    showMessage('เกิดข้อผิดพลาดในการบันทึก: ' + result.message, 'error');
+                    showMessage('เกิดข้อผิดพลาดในการบันทึก: ' + (result.message || 'ไม่ทราบสาเหตุ'), 'error');
                 }
             } catch (error) {
                 console.error('Error saving attendance:', error);
-                showMessage('เกิดข้อผิดพลาดในการบันทึก', 'error');
+                showMessage('เกิดข้อผิดพลาดในการบันทึก: ' + error.message, 'error');
             } finally {
                 hideLoading();
             }
@@ -529,10 +613,21 @@
             };
             
             classrooms.push(newClassroom);
-            await saveClassrooms();
-            document.getElementById('classroomName').value = '';
-            renderClassroomManagement();
-            populateAttendanceSelects();
+            
+            try {
+                showLoading('กำลังบันทึกข้อมูล...');
+                await saveClassrooms();
+                document.getElementById('classroomName').value = '';
+                renderClassroomManagement();
+                populateAttendanceSelects();
+                showMessage('เพิ่มห้องเรียนสำเร็จ', 'success');
+            } catch (error) {
+                // ถ้าบันทึกไม่สำเร็จ ให้ลบออกจาก array
+                classrooms.pop();
+                showMessage('เกิดข้อผิดพลาดในการบันทึกห้องเรียน', 'error');
+            } finally {
+                hideLoading();
+            }
         }
 
         async function addSubject() {
@@ -548,15 +643,42 @@
             };
             
             subjects.push(newSubject);
-            await saveSubjects();
-            document.getElementById('subjectName').value = '';
-            renderSubjectManagement();
-            populateAttendanceSelects();
+            
+            try {
+                showLoading('กำลังบันทึกข้อมูล...');
+                await saveSubjects();
+                document.getElementById('subjectName').value = '';
+                renderSubjectManagement();
+                populateAttendanceSelects();
+                showMessage('เพิ่มรายวิชาสำเร็จ', 'success');
+            } catch (error) {
+                // ถ้าบันทึกไม่สำเร็จ ให้ลบออกจาก array
+                subjects.pop();
+                showMessage('เกิดข้อผิดพลาดในการบันทึกรายวิชา', 'error');
+            } finally {
+                hideLoading();
+            }
         }
 
         // ฟังก์ชันลบห้องเรียน
         async function deleteClassroom(id) {
-            if (confirm('คุณต้องการลบห้องเรียนนี้หรือไม่?\n(ข้อมูลการเข้าเรียนที่เกี่ยวข้องจะถูกลบด้วย)')) {
+            const classroom = classrooms.find(c => c.id == id);
+            if (!classroom) {
+                showMessage('ไม่พบห้องเรียนที่ต้องการลบ', 'error');
+                return;
+            }
+            
+            // นับจำนวนข้อมูลที่จะถูกลบ
+            const relatedAttendance = attendanceRecords.filter(a => a.classroomId == id);
+            const studentCount = classroom.students ? classroom.students.length : 0;
+            const confirmMessage = `คุณต้องการลบห้องเรียน "${classroom.name}" หรือไม่?\n\n` +
+                                 `ข้อมูลที่จะถูกลบ:\n` +
+                                 `- ห้องเรียน: 1 รายการ\n` +
+                                 `- นักเรียน: ${studentCount} คน\n` +
+                                 `- ข้อมูลการเข้าเรียน: ${relatedAttendance.length} รายการ\n\n` +
+                                 `การดำเนินการนี้ไม่สามารถยกเลิกได้`;
+            
+            if (confirm(confirmMessage)) {
                 try {
                     showLoading('กำลังลบข้อมูล...');
                     
@@ -568,7 +690,8 @@
                         },
                         body: JSON.stringify({
                             action: 'deleteClassroom',
-                            classroomId: id
+                            classroomId: id,
+                            sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
                         })
                     });
 
@@ -576,18 +699,21 @@
                     
                     if (result.success) {
                         // อัปเดตข้อมูลในหน้าเว็บ
-                        classrooms = classrooms.filter(c => c.id !== id);
-                        attendanceRecords = attendanceRecords.filter(a => a.classroomId !== id);
+                        classrooms = classrooms.filter(c => c.id != id);
+                        attendanceRecords = attendanceRecords.filter(a => a.classroomId != id);
                         
                         renderClassroomManagement();
                         populateAttendanceSelects();
-                        showMessage(`ลบห้องเรียนสำเร็จ (ลบข้อมูลการเข้าเรียน ${result.deletedAttendanceRecords} รายการ)`, 'success');
+                        populateHistoryFilters();
+                        
+                        const deletedCount = result.deletedAttendanceRecords || relatedAttendance.length;
+                        showMessage(`ลบห้องเรียนสำเร็จ (ลบข้อมูลการเข้าเรียน ${deletedCount} รายการ)`, 'success');
                     } else {
-                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + result.message, 'error');
+                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + (result.message || 'ไม่ทราบสาเหตุ'), 'error');
                     }
                 } catch (error) {
                     console.error('Error deleting classroom:', error);
-                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message, 'error');
                 } finally {
                     hideLoading();
                 }
@@ -596,7 +722,21 @@
 
         // ฟังก์ชันลบรายวิชา
         async function deleteSubject(id) {
-            if (confirm('คุณต้องการลบรายวิชานี้หรือไม่?\n(ข้อมูลการเข้าเรียนที่เกี่ยวข้องจะถูกลบด้วย)')) {
+            const subject = subjects.find(s => s.id == id);
+            if (!subject) {
+                showMessage('ไม่พบรายวิชาที่ต้องการลบ', 'error');
+                return;
+            }
+            
+            // นับจำนวนข้อมูลการเข้าเรียนที่จะถูกลบ
+            const relatedAttendance = attendanceRecords.filter(a => a.subjectId == id);
+            const confirmMessage = `คุณต้องการลบรายวิชา "${subject.name}" หรือไม่?\n\n` +
+                                 `ข้อมูลที่จะถูกลบ:\n` +
+                                 `- รายวิชา: 1 รายการ\n` +
+                                 `- ข้อมูลการเข้าเรียน: ${relatedAttendance.length} รายการ\n\n` +
+                                 `การดำเนินการนี้ไม่สามารถยกเลิกได้`;
+            
+            if (confirm(confirmMessage)) {
                 try {
                     showLoading('กำลังลบข้อมูล...');
                     
@@ -608,7 +748,8 @@
                         },
                         body: JSON.stringify({
                             action: 'deleteSubject',
-                            subjectId: id
+                            subjectId: id,
+                            sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
                         })
                     });
 
@@ -616,18 +757,21 @@
                     
                     if (result.success) {
                         // อัปเดตข้อมูลในหน้าเว็บ
-                        subjects = subjects.filter(s => s.id !== id);
-                        attendanceRecords = attendanceRecords.filter(a => a.subjectId !== id);
+                        subjects = subjects.filter(s => s.id != id);
+                        attendanceRecords = attendanceRecords.filter(a => a.subjectId != id);
                         
                         renderSubjectManagement();
                         populateAttendanceSelects();
-                        showMessage(`ลบรายวิชาสำเร็จ (ลบข้อมูลการเข้าเรียน ${result.deletedAttendanceRecords} รายการ)`, 'success');
+                        populateHistoryFilters();
+                        
+                        const deletedCount = result.deletedAttendanceRecords || relatedAttendance.length;
+                        showMessage(`ลบรายวิชาสำเร็จ (ลบข้อมูลการเข้าเรียน ${deletedCount} รายการ)`, 'success');
                     } else {
-                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + result.message, 'error');
+                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + (result.message || 'ไม่ทราบสาเหตุ'), 'error');
                     }
                 } catch (error) {
                     console.error('Error deleting subject:', error);
-                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message, 'error');
                 } finally {
                     hideLoading();
                 }
@@ -650,7 +794,7 @@
                         <span class="text-sm text-gray-500 ml-2">(${classroom.students ? classroom.students.length : 0} คน)</span>
                     </div>
                     <div class="space-x-2">
-                        <button onclick="editClassroom(${classroom.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                        <button onclick="openStudentModal(${classroom.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
                             แก้ไข
                         </button>
                         <button onclick="deleteClassroom(${classroom.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
@@ -675,10 +819,10 @@
                 div.innerHTML = `
                     <span class="font-medium text-gray-800">${subject.name}</span>
                     <div class="space-x-2">
-                        <button onclick="editSubject(${subject.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                        <button onclick="editSubject('${subject.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
                             แก้ไข
                         </button>
-                        <button onclick="deleteSubject(${subject.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                        <button onclick="deleteSubject('${subject.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
                             ลบ
                         </button>
                     </div>
@@ -687,29 +831,52 @@
             });
         }
 
-        function editClassroom(id) {
-            const classroom = classrooms.find(c => c.id === id);
-            if (!classroom) return;
-            
-            const newName = prompt('แก้ไขชื่อห้องเรียน:', classroom.name);
-            if (newName && newName.trim() !== classroom.name) {
-                classroom.name = newName.trim();
-                saveClassrooms();
-                renderClassroomManagement();
-                populateAttendanceSelects();
+        async function editSubject(id) {
+            const subject = subjects.find(s => s.id == id);
+            if (!subject) {
+                showMessage('ไม่พบรายวิชาที่ต้องการแก้ไข', 'error');
+                return;
             }
-        }
-
-        function editSubject(id) {
-            const subject = subjects.find(s => s.id === id);
-            if (!subject) return;
             
             const newName = prompt('แก้ไขชื่อรายวิชา:', subject.name);
-            if (newName && newName.trim() !== subject.name) {
+            if (newName && newName.trim() !== '' && newName.trim() !== subject.name) {
+                const oldName = subject.name;
                 subject.name = newName.trim();
-                saveSubjects();
-                renderSubjectManagement();
-                populateAttendanceSelects();
+                
+                try {
+                    showLoading('กำลังบันทึกข้อมูล...');
+                    
+                    const response = await fetch(WEB_APP_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'saveSubjects',
+                            subjects: subjects,
+                            sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        renderSubjectManagement();
+                        populateAttendanceSelects();
+                        populateHistoryFilters();
+                        showMessage('แก้ไขรายวิชาสำเร็จ', 'success');
+                    } else {
+                        throw new Error(result.message || 'เกิดข้อผิดพลาดในการบันทึก');
+                    }
+                } catch (error) {
+                    console.error('Error editing subject:', error);
+                    // ถ้าบันทึกไม่สำเร็จ ให้คืนค่าเดิม
+                    subject.name = oldName;
+                    renderSubjectManagement();
+                    showMessage('เกิดข้อผิดพลาดในการแก้ไขรายวิชา: ' + error.message, 'error');
+                } finally {
+                    hideLoading();
+                }
             }
         }
 
@@ -722,17 +889,18 @@
                     },
                     body: JSON.stringify({
                         action: 'saveClassrooms',
-                        classrooms: classrooms
+                        classrooms: classrooms,
+                        sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
                     })
                 });
                 
                 const result = await response.json();
                 if (!result.success) {
-                    showMessage('เกิดข้อผิดพลาดในการบันทึกห้องเรียน: ' + result.message, 'error');
+                    throw new Error(result.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลห้องเรียน');
                 }
             } catch (error) {
                 console.error('Error saving classrooms:', error);
-                showMessage('เกิดข้อผิดพลาดในการบันทึกห้องเรียน', 'error');
+                throw error;
             }
         }
 
@@ -745,18 +913,311 @@
                     },
                     body: JSON.stringify({
                         action: 'saveSubjects',
-                        subjects: subjects
+                        subjects: subjects,
+                        sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
                     })
                 });
                 
                 const result = await response.json();
                 if (!result.success) {
-                    showMessage('เกิดข้อผิดพลาดในการบันทึกรายวิชา: ' + result.message, 'error');
+                    throw new Error(result.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูลรายวิชา');
                 }
             } catch (error) {
                 console.error('Error saving subjects:', error);
-                showMessage('เกิดข้อผิดพลาดในการบันทึกรายวิชา', 'error');
+                throw error;
             }
+        }
+
+        // Student Management Functions
+        function openStudentModal(classroomId) {
+            const classroom = classrooms.find(c => c.id == classroomId);
+            if (!classroom) return;
+            
+            currentEditingClassroom = classroom;
+            document.getElementById('studentModalTitle').textContent = `จัดการนักเรียน - ${classroom.name}`;
+            document.getElementById('studentModal').classList.remove('hidden');
+            
+            renderStudentList();
+        }
+
+        function closeStudentModal() {
+            document.getElementById('studentModal').classList.add('hidden');
+            currentEditingClassroom = null;
+            clearStudentForm();
+            clearImportedData();
+        }
+
+        function clearStudentForm() {
+            document.getElementById('studentNumber').value = '';
+            document.getElementById('studentId').value = '';
+            document.getElementById('studentName').value = '';
+        }
+
+        function addStudent() {
+            const number = parseInt(document.getElementById('studentNumber').value);
+            const studentId = document.getElementById('studentId').value.trim();
+            const name = document.getElementById('studentName').value.trim();
+            
+            if (!number || !studentId || !name) {
+                showMessage('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+                return;
+            }
+            
+            if (!currentEditingClassroom) return;
+            
+            // ตรวจสอบเลขที่ซ้ำ
+            if (currentEditingClassroom.students.some(s => s.number === number)) {
+                showMessage('เลขที่นี้มีอยู่แล้ว', 'error');
+                return;
+            }
+            
+            // ตรวจสอบเลขประจำตัวซ้ำ
+            if (currentEditingClassroom.students.some(s => s.studentId === studentId)) {
+                showMessage('เลขประจำตัวนักเรียนนี้มีอยู่แล้ว', 'error');
+                return;
+            }
+            
+            const newStudent = {
+                id: Date.now(),
+                number: number,
+                studentId: studentId,
+                name: name
+            };
+            
+            currentEditingClassroom.students.push(newStudent);
+            renderStudentList();
+            clearStudentForm();
+            showMessage('เพิ่มนักเรียนสำเร็จ', 'success');
+        }
+
+        function renderStudentList() {
+            if (!currentEditingClassroom) return;
+            
+            const container = document.getElementById('studentListModal');
+            container.innerHTML = '';
+            
+            if (!currentEditingClassroom.students || currentEditingClassroom.students.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">ยังไม่มีนักเรียนในห้องเรียนนี้</p>';
+                return;
+            }
+            
+            // เรียงลำดับตามเลขที่
+            const sortedStudents = [...currentEditingClassroom.students].sort((a, b) => a.number - b.number);
+            
+            sortedStudents.forEach(student => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+                div.innerHTML = `
+                    <div class="flex items-center space-x-4">
+                        <span class="font-medium text-gray-800 w-12">${student.number}.</span>
+                        <span class="text-gray-600 w-32">${student.studentId}</span>
+                        <span class="text-gray-800">${student.name}</span>
+                    </div>
+                    <div class="space-x-2">
+                        <button onclick="editStudentInline(${student.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                            แก้ไข
+                        </button>
+                        <button onclick="deleteStudent(${student.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                            ลบ
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function editStudentInline(studentId) {
+            if (!currentEditingClassroom) return;
+            
+            const student = currentEditingClassroom.students.find(s => s.id === studentId);
+            if (!student) return;
+            
+            const newNumber = prompt('แก้ไขเลขที่:', student.number);
+            if (newNumber === null) return;
+            
+            const newStudentId = prompt('แก้ไขเลขประจำตัวนักเรียน:', student.studentId);
+            if (newStudentId === null) return;
+            
+            const newName = prompt('แก้ไขชื่อ-สกุล:', student.name);
+            if (newName === null) return;
+            
+            const numberInt = parseInt(newNumber);
+            if (!numberInt || !newStudentId.trim() || !newName.trim()) {
+                showMessage('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+                return;
+            }
+            
+            // ตรวจสอบเลขที่ซ้ำ (ยกเว้นตัวเอง)
+            if (currentEditingClassroom.students.some(s => s.number === numberInt && s.id !== studentId)) {
+                showMessage('เลขที่นี้มีอยู่แล้ว', 'error');
+                return;
+            }
+            
+            // ตรวจสอบเลขประจำตัวซ้ำ (ยกเว้นตัวเอง)
+            if (currentEditingClassroom.students.some(s => s.studentId === newStudentId.trim() && s.id !== studentId)) {
+                showMessage('เลขประจำตัวนักเรียนนี้มีอยู่แล้ว', 'error');
+                return;
+            }
+            
+            student.number = numberInt;
+            student.studentId = newStudentId.trim();
+            student.name = newName.trim();
+            
+            renderStudentList();
+            showMessage('แก้ไขข้อมูลนักเรียนสำเร็จ', 'success');
+        }
+
+        function deleteStudent(studentId) {
+            if (!currentEditingClassroom) return;
+            
+            const student = currentEditingClassroom.students.find(s => s.id === studentId);
+            if (!student) return;
+            
+            if (confirm(`คุณต้องการลบนักเรียน "${student.name}" หรือไม่?`)) {
+                currentEditingClassroom.students = currentEditingClassroom.students.filter(s => s.id !== studentId);
+                renderStudentList();
+                showMessage('ลบนักเรียนสำเร็จ', 'success');
+            }
+        }
+
+        async function saveStudentChanges() {
+            if (!currentEditingClassroom) return;
+            
+            try {
+                showLoading('กำลังบันทึกข้อมูล...');
+                await saveClassrooms();
+                renderClassroomManagement();
+                populateAttendanceSelects();
+                showMessage('บันทึกข้อมูลนักเรียนสำเร็จ', 'success');
+                closeStudentModal();
+            } catch (error) {
+                showMessage('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Excel Import Functions
+        function importFromExcel() {
+            const fileInput = document.getElementById('excelFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showMessage('กรุณาเลือกไฟล์ Excel', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    processExcelData(jsonData);
+                } catch (error) {
+                    console.error('Error reading Excel file:', error);
+                    showMessage('เกิดข้อผิดพลาดในการอ่านไฟล์ Excel', 'error');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processExcelData(data) {
+            importedStudents = [];
+            
+            // ข้ามแถวแรกถ้าเป็น header
+            const startRow = data[0] && (isNaN(data[0][0]) || data[0][0] === 'เลขที่') ? 1 : 0;
+            
+            for (let i = startRow; i < data.length; i++) {
+                const row = data[i];
+                if (row && row.length >= 3 && row[0] && row[1] && row[2]) {
+                    const number = parseInt(row[0]);
+                    const studentId = String(row[1]).trim();
+                    const name = String(row[2]).trim();
+                    
+                    if (number && studentId && name) {
+                        importedStudents.push({
+                            id: Date.now() + i,
+                            number: number,
+                            studentId: studentId,
+                            name: name
+                        });
+                    }
+                }
+            }
+            
+            if (importedStudents.length === 0) {
+                showMessage('ไม่พบข้อมูลที่ถูกต้องในไฟล์ Excel', 'error');
+                return;
+            }
+            
+            displayImportPreview();
+        }
+
+        function displayImportPreview() {
+            const previewDiv = document.getElementById('importPreview');
+            const dataDiv = document.getElementById('importedData');
+            
+            let html = '<div class="space-y-1">';
+            importedStudents.forEach(student => {
+                html += `
+                    <div class="flex items-center space-x-4 text-sm">
+                        <span class="w-12">${student.number}.</span>
+                        <span class="w-32">${student.studentId}</span>
+                        <span>${student.name}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            dataDiv.innerHTML = html;
+            previewDiv.classList.remove('hidden');
+            document.getElementById('saveImportBtn').classList.remove('hidden');
+            document.getElementById('clearImportBtn').classList.remove('hidden');
+            
+            showMessage(`พบข้อมูล ${importedStudents.length} รายการ`, 'success');
+        }
+
+        function saveImportedStudents() {
+            if (!currentEditingClassroom || importedStudents.length === 0) return;
+            
+            let addedCount = 0;
+            let skippedCount = 0;
+            
+            importedStudents.forEach(importedStudent => {
+                // ตรวจสอบเลขที่ซ้ำ
+                const existingByNumber = currentEditingClassroom.students.find(s => s.number === importedStudent.number);
+                // ตรวจสอบเลขประจำตัวซ้ำ
+                const existingByStudentId = currentEditingClassroom.students.find(s => s.studentId === importedStudent.studentId);
+                
+                if (!existingByNumber && !existingByStudentId) {
+                    currentEditingClassroom.students.push(importedStudent);
+                    addedCount++;
+                } else {
+                    skippedCount++;
+                }
+            });
+            
+            renderStudentList();
+            clearImportedData();
+            
+            if (addedCount > 0) {
+                showMessage(`นำเข้าข้อมูลสำเร็จ ${addedCount} รายการ${skippedCount > 0 ? ` (ข้าม ${skippedCount} รายการที่ซ้ำ)` : ''}`, 'success');
+            } else {
+                showMessage('ไม่มีข้อมูลใหม่ที่สามารถนำเข้าได้ (ข้อมูลซ้ำทั้งหมด)', 'info');
+            }
+        }
+
+        function clearImportedData() {
+            importedStudents = [];
+            document.getElementById('importPreview').classList.add('hidden');
+            document.getElementById('saveImportBtn').classList.add('hidden');
+            document.getElementById('clearImportBtn').classList.add('hidden');
+            document.getElementById('excelFile').value = '';
         }
 
         // History functions
@@ -860,7 +1321,7 @@
                 return;
             }
             
-            const confirmMessage = `คุณต้องการลบข้อมูลการเข้าเรียนหรือไม่?\n\nวันที่: ${date}\nห้องเรียน: ${classroom.name}\nรายวิชา: ${subject.name}`;
+            const confirmMessage = `คุณต้องการลบข้อมูลการเข้าเรียนหรือไม่?\n\nวันที่: ${date}\nห้องเรียน: ${classroom.name}\nรายวิชา: ${subject.name}\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`;
             
             if (confirm(confirmMessage)) {
                 try {
@@ -875,7 +1336,8 @@
                             action: 'deleteAttendanceRecord',
                             date: date,
                             classroomId: classroomId,
-                            subjectId: subjectId
+                            subjectId: subjectId,
+                            sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
                         })
                     });
 
@@ -891,16 +1353,16 @@
                         filterHistory();
                         showMessage('ลบข้อมูลการเข้าเรียนสำเร็จ', 'success');
                     } else {
-                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + result.message, 'error');
+                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + (result.message || 'ไม่ทราบสาเหตุ'), 'error');
                     }
                 } catch (error) {
                     console.error('Error deleting attendance record:', error);
-                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล', 'error');
+                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message, 'error');
                 } finally {
                     hideLoading();
                 }
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'973b4a1bf57f5f2e',t:'MTc1NTk1OTIzNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'973be36ca16bc26b',t:'MTc1NTk2NTUxNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
