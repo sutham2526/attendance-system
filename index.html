@@ -554,17 +554,20 @@
             try {
                 showLoading('กำลังบันทึกข้อมูล...');
                 
+                // ใช้ FormData แทน JSON เพื่อหลีกเลี่ยงปัญหา CORS
+                const formData = new FormData();
+                formData.append('action', 'saveAttendance');
+                formData.append('attendanceRecord', JSON.stringify(attendanceRecord));
+                formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
+                
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'saveAttendance',
-                        attendanceRecord: attendanceRecord,
-                        sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
-                    })
+                    body: formData
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 const result = await response.json();
                 
@@ -589,7 +592,11 @@
                 }
             } catch (error) {
                 console.error('Error saving attendance:', error);
-                showMessage('เกิดข้อผิดพลาดในการบันทึก: ' + error.message, 'error');
+                if (error.message === 'Failed to fetch') {
+                    showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการบันทึก: ' + error.message, 'error');
+                }
             } finally {
                 hideLoading();
             }
@@ -614,17 +621,20 @@
             try {
                 showLoading('กำลังบันทึกข้อมูล...');
                 
+                // ใช้ FormData แทน JSON เพื่อหลีกเลี่ยงปัญหา CORS
+                const formData = new FormData();
+                formData.append('action', 'saveClassrooms');
+                formData.append('classrooms', JSON.stringify(classrooms));
+                formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
+                
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'saveClassrooms',
-                        classrooms: classrooms,
-                        sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
-                    })
+                    body: formData
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 const result = await response.json();
                 
@@ -642,7 +652,11 @@
                 // ถ้าบันทึกไม่สำเร็จ ให้ลบออกจาก array
                 classrooms.pop();
                 renderClassroomManagement();
-                showMessage('เกิดข้อผิดพลาดในการบันทึกห้องเรียน: ' + error.message, 'error');
+                if (error.message === 'Failed to fetch') {
+                    showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการบันทึกห้องเรียน: ' + error.message, 'error');
+                }
             } finally {
                 hideLoading();
             }
@@ -671,17 +685,20 @@
             try {
                 showLoading('กำลังบันทึกข้อมูล...');
                 
+                // ใช้ FormData แทน JSON เพื่อหลีกเลี่ยงปัญหา CORS
+                const formData = new FormData();
+                formData.append('action', 'saveSubjects');
+                formData.append('subjects', JSON.stringify(subjects));
+                formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
+                
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'saveSubjects',
-                        subjects: subjects,
-                        sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
-                    })
+                    body: formData
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 const result = await response.json();
                 
@@ -699,7 +716,11 @@
                 // ถ้าบันทึกไม่สำเร็จ ให้ลบออกจาก array
                 subjects.pop();
                 renderSubjectManagement();
-                showMessage('เกิดข้อผิดพลาดในการบันทึกรายวิชา: ' + error.message, 'error');
+                if (error.message === 'Failed to fetch') {
+                    showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการบันทึกรายวิชา: ' + error.message, 'error');
+                }
             } finally {
                 hideLoading();
             }
@@ -1124,17 +1145,20 @@
             try {
                 showLoading('กำลังบันทึกข้อมูล...');
                 
+                // ใช้ FormData แทน JSON เพื่อหลีกเลี่ยงปัญหา CORS
+                const formData = new FormData();
+                formData.append('action', 'saveClassrooms');
+                formData.append('classrooms', JSON.stringify(classrooms));
+                formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
+                
                 const response = await fetch(WEB_APP_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'saveClassrooms',
-                        classrooms: classrooms,
-                        sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
-                    })
+                    body: formData
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 const result = await response.json();
                 
@@ -1148,7 +1172,11 @@
                 }
             } catch (error) {
                 console.error('Error saving student changes:', error);
-                showMessage('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message, 'error');
+                if (error.message === 'Failed to fetch') {
+                    showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message, 'error');
+                }
             } finally {
                 hideLoading();
             }
@@ -1421,5 +1449,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'973f7dfe3082fdb4',t:'MTc1NjAwMzMwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'973f9484904dfd21',t:'MTc1NjAwNDIyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
