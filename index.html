@@ -158,13 +158,13 @@
         <!-- Navigation -->
         <div class="bg-white rounded-lg shadow-md mb-8">
             <div class="flex flex-wrap justify-center p-4 space-x-2 space-y-2 md:space-y-0">
-                <button onclick="showSection('attendance', this)" class="nav-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors opacity-100 ring-2 ring-blue-300">
+                <button id="attendanceBtn" class="nav-btn bg-blue-300 hover:bg-blue-400 text-white px-6 py-2 rounded-lg transition-colors opacity-60">
                     📝 บันทึกการเข้าเรียน
                 </button>
-                <button onclick="showSection('management', this)" class="nav-btn bg-green-300 hover:bg-green-400 text-white px-6 py-2 rounded-lg transition-colors opacity-60">
+                <button id="managementBtn" class="nav-btn bg-green-300 hover:bg-green-400 text-white px-6 py-2 rounded-lg transition-colors opacity-60">
                     ⚙️ จัดการข้อมูล
                 </button>
-                <button onclick="showSection('history', this)" class="nav-btn bg-purple-300 hover:bg-purple-400 text-white px-6 py-2 rounded-lg transition-colors opacity-60">
+                <button id="historyBtn" class="nav-btn bg-purple-300 hover:bg-purple-400 text-white px-6 py-2 rounded-lg transition-colors opacity-60">
                     📊 ประวัติการเข้าเรียน
                 </button>
             </div>
@@ -172,8 +172,36 @@
 
         <!-- Content Sections -->
         <div id="content" class="fade-in">
+            <!-- Welcome Message -->
+            <div id="welcomeSection" class="section">
+                <div class="bg-white rounded-lg shadow-md p-8 text-center">
+                    <div class="mb-6">
+                        <div class="text-6xl mb-4">📚</div>
+                        <h2 class="text-3xl font-bold text-gray-800 mb-4">ยินดีต้อนรับสู่ระบบบันทึกเวลาเรียน</h2>
+                        <p class="text-gray-600 text-lg mb-8">เลือกเมนูด้านบนเพื่อเริ่มใช้งานระบบ</p>
+                    </div>
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div class="p-6 bg-blue-50 rounded-lg">
+                            <div class="text-3xl mb-3">📝</div>
+                            <h3 class="font-semibold text-gray-800 mb-2">บันทึกการเข้าเรียน</h3>
+                            <p class="text-gray-600 text-sm">บันทึกการเข้าเรียนของนักเรียนในแต่ละวัน</p>
+                        </div>
+                        <div class="p-6 bg-green-50 rounded-lg">
+                            <div class="text-3xl mb-3">⚙️</div>
+                            <h3 class="font-semibold text-gray-800 mb-2">จัดการข้อมูล</h3>
+                            <p class="text-gray-600 text-sm">จัดการห้องเรียน รายวิชา และข้อมูลนักเรียน</p>
+                        </div>
+                        <div class="p-6 bg-purple-50 rounded-lg">
+                            <div class="text-3xl mb-3">📊</div>
+                            <h3 class="font-semibold text-gray-800 mb-2">ประวัติการเข้าเรียน</h3>
+                            <p class="text-gray-600 text-sm">ดูและจัดการประวัติการเข้าเรียนที่ผ่านมา</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Attendance Section -->
-            <div id="attendanceSection" class="section">
+            <div id="attendanceSection" class="section hidden">
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 บันทึกการเข้าเรียน</h2>
                     
@@ -552,8 +580,26 @@
             // Load initial data
             loadAllData();
             
-            // Show attendance section by default
-            showSection('attendance');
+            // Add click event listeners to navigation buttons
+            document.getElementById('attendanceBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Attendance button clicked');
+                showSection('attendance', this);
+            });
+            
+            document.getElementById('managementBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Management button clicked');
+                showSection('management', this);
+            });
+            
+            document.getElementById('historyBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('History button clicked');
+                showSection('history', this);
+            });
+            
+            // Don't show any section by default - let user choose
         });
 
         // Utility functions
@@ -587,13 +633,19 @@
         }
 
         function showSection(sectionName, clickedButton = null) {
-            // Hide all sections
+            console.log('showSection called with:', sectionName, clickedButton);
+            
+            // Hide all sections including welcome
             document.querySelectorAll('.section').forEach(section => {
                 section.classList.add('hidden');
             });
             
             // Show selected section
-            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+            const targetSection = document.getElementById(sectionName + 'Section');
+            console.log('Target section:', targetSection);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
             
             // Update navigation buttons - reset all first
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -608,15 +660,30 @@
             });
             
             // Highlight active button with full color
-            const activeBtn = clickedButton || document.querySelector(`button[onclick*="showSection('${sectionName}')"]`);
-            if (activeBtn) {
+            if (clickedButton) {
                 if (sectionName === 'attendance') {
-                    activeBtn.className = 'nav-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors opacity-100 ring-2 ring-blue-300';
+                    clickedButton.className = 'nav-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors opacity-100 ring-2 ring-blue-300';
                 } else if (sectionName === 'management') {
-                    activeBtn.className = 'nav-btn bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors opacity-100 ring-2 ring-green-300';
+                    clickedButton.className = 'nav-btn bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors opacity-100 ring-2 ring-green-300';
                 } else if (sectionName === 'history') {
-                    activeBtn.className = 'nav-btn bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors opacity-100 ring-2 ring-purple-300';
+                    clickedButton.className = 'nav-btn bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors opacity-100 ring-2 ring-purple-300';
                 }
+            } else {
+                // If no clicked button provided, find and highlight the correct button
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    if ((sectionName === 'attendance' && btn.textContent.includes('บันทึกการเข้าเรียน')) ||
+                        (sectionName === 'management' && btn.textContent.includes('จัดการข้อมูล')) ||
+                        (sectionName === 'history' && btn.textContent.includes('ประวัติการเข้าเรียน'))) {
+                        
+                        if (sectionName === 'attendance') {
+                            btn.className = 'nav-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors opacity-100 ring-2 ring-blue-300';
+                        } else if (sectionName === 'management') {
+                            btn.className = 'nav-btn bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors opacity-100 ring-2 ring-green-300';
+                        } else if (sectionName === 'history') {
+                            btn.className = 'nav-btn bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors opacity-100 ring-2 ring-purple-300';
+                        }
+                    }
+                });
             }
             
             // Render content based on section
@@ -626,9 +693,12 @@
             } else if (sectionName === 'history') {
                 populateHistoryFilters();
                 // Reset filters to default when entering history section
-                document.getElementById('historyClassroom').value = '';
-                document.getElementById('historySubject').value = '';
-                document.getElementById('historyResults').innerHTML = '';
+                const historyClassroom = document.getElementById('historyClassroom');
+                const historySubject = document.getElementById('historySubject');
+                const historyResults = document.getElementById('historyResults');
+                if (historyClassroom) historyClassroom.value = '';
+                if (historySubject) historySubject.value = '';
+                if (historyResults) historyResults.innerHTML = '';
             } else if (sectionName === 'attendance') {
                 populateAttendanceSelects();
             }
@@ -1949,11 +2019,11 @@
                         showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
                     } else {
                         showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message, 'error');
+                    }
                 } finally {
                     hideLoading();
                 }
-            }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97409f3204bbc9c6',t:'MTc1NjAxNTE0OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9740c4a30017cbe1',t:'MTc1NjAxNjY4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
