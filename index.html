@@ -82,8 +82,8 @@
         }
 
         .status-btn {
-            width: 40px;
-            height: 40px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             border: 2px solid #d1d5db;
             background: #f9fafb;
@@ -91,6 +91,7 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
+            font-size: 10px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -179,7 +180,7 @@
                     <div class="grid md:grid-cols-3 gap-4 mb-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">วันที่</label>
-                            <input type="date" id="attendanceDate" onchange="onDateChange()" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <input type="date" id="attendanceDate" onchange="onDateChange()" class="w-full p-3 border-2 border-blue-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">ห้องเรียน</label>
@@ -197,51 +198,51 @@
 
                     <div id="studentList" class="hidden">
                         <div class="mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">รายชื่อนักเรียน</h3>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">รายชื่อนักเรียน - สถานะการเข้าเรียน</h3>
                             <div class="bg-gray-50 p-4 rounded-lg mb-4">
                                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                                     <div class="flex items-center space-x-2">
                                         <div class="status-btn status-present selected">
                                             <span>/</span>
                                         </div>
-                                        <span>มาเรียน</span>
+                                        <span>มาเรียน (/)</span>
                                     </div>
                                     <div class="flex items-center space-x-2">
                                         <div class="status-btn status-absent">
                                             <span>ข</span>
                                         </div>
-                                        <span>ขาดเรียน</span>
+                                        <span>ขาดเรียน (ข)</span>
                                     </div>
                                     <div class="flex items-center space-x-2">
                                         <div class="status-btn status-business">
                                             <span>ล</span>
                                         </div>
-                                        <span>ลากิจ</span>
+                                        <span>ลากิจ (ล)</span>
                                     </div>
                                     <div class="flex items-center space-x-2">
                                         <div class="status-btn status-sick">
                                             <span>ป</span>
                                         </div>
-                                        <span>ลาป่วย</span>
+                                        <span>ลาป่วย (ป)</span>
                                     </div>
                                     <div class="flex items-center space-x-2">
                                         <div class="status-btn status-activity">
                                             <span>ก</span>
                                         </div>
-                                        <span>กิจกรรม</span>
+                                        <span>กิจกรรม (ก)</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="overflow-x-auto">
-                            <table class="w-full border-collapse">
+                            <table class="w-full border-collapse table-fixed">
                                 <thead>
                                     <tr class="bg-gray-100">
-                                        <th class="border border-gray-300 px-4 py-2 text-left">เลขที่</th>
-                                        <th class="border border-gray-300 px-4 py-2 text-left">เลขประจำตัว</th>
-                                        <th class="border border-gray-300 px-4 py-2 text-left">ชื่อ-สกุล</th>
-                                        <th class="border border-gray-300 px-4 py-2 text-center">สถานะการเข้าเรียน</th>
+                                        <th class="border border-gray-300 px-2 py-2 text-left w-16">เลขที่</th>
+                                        <th class="border border-gray-300 px-2 py-2 text-left w-32">เลขประจำตัว</th>
+                                        <th class="border border-gray-300 px-2 py-2 text-left" style="width: 400px;">ชื่อ-สกุล</th>
+                                        <th class="border border-gray-300 px-2 py-2 text-center w-40">สถานะการเข้าเรียน</th>
                                     </tr>
                                 </thead>
                                 <tbody id="studentAttendance">
@@ -384,6 +385,76 @@
         </div>
     </div>
 
+    <!-- Edit Classroom Modal -->
+    <div id="editClassroomModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-800">แก้ไขชื่อห้องเรียน</h3>
+                    <button onclick="closeEditClassroomModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อห้องเรียน</label>
+                    <input type="text" id="editClassroomName" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+            
+            <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="closeEditClassroomModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors">
+                    ยกเลิก
+                </button>
+                <button onclick="saveClassroomEdit()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors">
+                    บันทึก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-red-600">ยืนยันการลบ</h3>
+                    <button onclick="closeDeleteConfirmModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0 w-10 h-10 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p id="deleteConfirmMessage" class="text-gray-700 mb-4"></p>
+                </div>
+            </div>
+            
+            <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="closeDeleteConfirmModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors">
+                    ยกเลิก
+                </button>
+                <button onclick="confirmDelete()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors">
+                    ลบ
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Import Confirmation Modal -->
     <div id="importModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
@@ -425,12 +496,18 @@
         let currentStudents = [];
         let currentEditingClassroom = null;
         let importedStudents = [];
+        let currentEditingClassroomId = null;
+        let currentEditingSubjectId = null;
+        let pendingDeleteAction = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             // Set today's date
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('attendanceDate').value = today;
+            const attendanceDateInput = document.getElementById('attendanceDate');
+            attendanceDateInput.value = today;
+            attendanceDateInput.max = today; // จำกัดให้เลือกได้เฉพาะวันที่ปัจจุบันและก่อนหน้า
+            
             document.getElementById('historyDate').value = today;
             
             // Load initial data
@@ -479,10 +556,30 @@
             // Show selected section
             document.getElementById(sectionName + 'Section').classList.remove('hidden');
             
-            // Update navigation buttons
+            // Update navigation buttons - reset all first
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('ring-2', 'ring-offset-2');
+                btn.classList.remove('ring-2', 'ring-offset-2', 'bg-blue-700', 'bg-green-700', 'bg-purple-700');
+                // Reset to original colors
+                if (btn.textContent.includes('บันทึกการเข้าเรียน')) {
+                    btn.className = 'nav-btn bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors';
+                } else if (btn.textContent.includes('จัดการข้อมูล')) {
+                    btn.className = 'nav-btn bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-colors';
+                } else if (btn.textContent.includes('ประวัติการเข้าเรียน')) {
+                    btn.className = 'nav-btn bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg transition-colors';
+                }
             });
+            
+            // Highlight active button
+            const activeBtn = event ? event.target : document.querySelector(`button[onclick="showSection('${sectionName}')"]`);
+            if (activeBtn) {
+                if (sectionName === 'attendance') {
+                    activeBtn.classList.add('bg-blue-700');
+                } else if (sectionName === 'management') {
+                    activeBtn.classList.add('bg-green-700');
+                } else if (sectionName === 'history') {
+                    activeBtn.classList.add('bg-purple-700');
+                }
+            }
             
             // Render content based on section
             if (sectionName === 'management') {
@@ -490,6 +587,7 @@
                 renderSubjectManagement();
             } else if (sectionName === 'history') {
                 populateHistoryFilters();
+                filterHistory(); // แสดงข้อมูลทั้งหมดเมื่อเข้าหน้าประวัติ
             } else if (sectionName === 'attendance') {
                 populateAttendanceSelects();
             }
@@ -647,11 +745,11 @@
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-gray-200';
                 tr.innerHTML = `
-                    <td class="border border-gray-300 px-4 py-3 font-medium">${student.number}</td>
-                    <td class="border border-gray-300 px-4 py-3">${student.studentId}</td>
-                    <td class="border border-gray-300 px-4 py-3">${student.name}</td>
-                    <td class="border border-gray-300 px-4 py-3">
-                        <div class="flex justify-center space-x-2">
+                    <td class="border border-gray-300 px-2 py-2 font-medium text-center">${student.number}</td>
+                    <td class="border border-gray-300 px-2 py-2">${student.studentId}</td>
+                    <td class="border border-gray-300 px-2 py-2 truncate" title="${student.name}">${student.name}</td>
+                    <td class="border border-gray-300 px-2 py-2">
+                        <div class="flex justify-center space-x-1">
                             <button class="status-btn status-present selected" onclick="selectStatus(${student.id}, 'present', this)" title="มาเรียน">
                                 <span>/</span>
                             </button>
@@ -896,6 +994,127 @@
             }
         }
 
+        // Modal functions
+        function openEditClassroomModal(id) {
+            const classroom = classrooms.find(c => c.id == id);
+            if (!classroom) return;
+            
+            currentEditingClassroomId = id;
+            document.getElementById('editClassroomName').value = classroom.name;
+            document.getElementById('editClassroomModal').classList.remove('hidden');
+        }
+
+        function closeEditClassroomModal() {
+            document.getElementById('editClassroomModal').classList.add('hidden');
+            currentEditingClassroomId = null;
+            document.getElementById('editClassroomName').value = '';
+        }
+
+        async function saveClassroomEdit() {
+            const newName = document.getElementById('editClassroomName').value.trim();
+            if (!newName) {
+                showMessage('กรุณาใส่ชื่อห้องเรียน', 'error');
+                return;
+            }
+
+            const classroom = classrooms.find(c => c.id == currentEditingClassroomId);
+            if (!classroom) return;
+
+            const oldName = classroom.name;
+            classroom.name = newName;
+
+            try {
+                showLoading('กำลังบันทึกข้อมูล...');
+                
+                const formData = new FormData();
+                formData.append('action', 'saveClassrooms');
+                formData.append('classrooms', JSON.stringify(classrooms));
+                formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
+                
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeEditClassroomModal();
+                    renderClassroomManagement();
+                    populateAttendanceSelects();
+                    populateHistoryFilters();
+                    showMessage('แก้ไขชื่อห้องเรียนสำเร็จ', 'success');
+                } else {
+                    throw new Error(result.message || 'เกิดข้อผิดพลาดในการบันทึก');
+                }
+            } catch (error) {
+                console.error('Error editing classroom:', error);
+                classroom.name = oldName;
+                renderClassroomManagement();
+                if (error.message === 'Failed to fetch') {
+                    showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการแก้ไขห้องเรียน: ' + error.message, 'error');
+                }
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function openDeleteConfirmModal(type, id, name) {
+            let message = '';
+            let relatedData = '';
+            
+            if (type === 'classroom') {
+                const classroom = classrooms.find(c => c.id == id);
+                const relatedAttendance = attendanceRecords.filter(a => a.classroomId == id);
+                const studentCount = classroom && classroom.students ? classroom.students.length : 0;
+                
+                message = `คุณต้องการลบห้องเรียน "${name}" หรือไม่?`;
+                relatedData = `\n\nข้อมูลที่จะถูกลบ:\n- ห้องเรียน: 1 รายการ\n- นักเรียน: ${studentCount} คน\n- ข้อมูลการเข้าเรียน: ${relatedAttendance.length} รายการ\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`;
+            } else if (type === 'subject') {
+                const relatedAttendance = attendanceRecords.filter(a => a.subjectId == id);
+                message = `คุณต้องการลบรายวิชา "${name}" หรือไม่?`;
+                relatedData = `\n\nข้อมูลที่จะถูกลบ:\n- รายวิชา: 1 รายการ\n- ข้อมูลการเข้าเรียน: ${relatedAttendance.length} รายการ\n\nการดำเนินการนี้ไม่สามารถยกเลิกได้`;
+            }
+            
+            document.getElementById('deleteConfirmMessage').textContent = message + relatedData;
+            pendingDeleteAction = { type, id };
+            document.getElementById('deleteConfirmModal').classList.remove('hidden');
+        }
+
+        function closeDeleteConfirmModal() {
+            document.getElementById('deleteConfirmModal').classList.add('hidden');
+            pendingDeleteAction = null;
+        }
+
+        async function confirmDelete() {
+            if (!pendingDeleteAction) return;
+            
+            const { type, id } = pendingDeleteAction;
+            closeDeleteConfirmModal();
+            
+            if (type === 'classroom') {
+                await deleteClassroom(id);
+            } else if (type === 'subject') {
+                await deleteSubject(id);
+            }
+        }
+
+        function openEditSubjectModal(id) {
+            const subject = subjects.find(s => s.id == id);
+            if (!subject) return;
+            
+            const newName = prompt('แก้ไขชื่อรายวิชา:', subject.name);
+            if (newName && newName.trim() !== '' && newName.trim() !== subject.name) {
+                editSubject(id, newName.trim());
+            }
+        }
+
         async function deleteClassroom(id) {
             const classroom = classrooms.find(c => c.id == id);
             if (!classroom) {
@@ -904,57 +1123,48 @@
             }
             
             const relatedAttendance = attendanceRecords.filter(a => a.classroomId == id);
-            const studentCount = classroom.students ? classroom.students.length : 0;
-            const confirmMessage = `คุณต้องการลบห้องเรียน "${classroom.name}" หรือไม่?\n\n` +
-                                 `ข้อมูลที่จะถูกลบ:\n` +
-                                 `- ห้องเรียน: 1 รายการ\n` +
-                                 `- นักเรียน: ${studentCount} คน\n` +
-                                 `- ข้อมูลการเข้าเรียน: ${relatedAttendance.length} รายการ\n\n` +
-                                 `การดำเนินการนี้ไม่สามารถยกเลิกได้`;
             
-            if (confirm(confirmMessage)) {
-                try {
-                    showLoading('กำลังลบข้อมูล...');
-                    
-                    const formData = new FormData();
-                    formData.append('action', 'deleteClassroom');
-                    formData.append('classroomId', id);
-                    formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
-                    
-                    const response = await fetch(WEB_APP_URL, {
-                        method: 'POST',
-                        body: formData
-                    });
+            try {
+                showLoading('กำลังลบข้อมูล...');
+                
+                const formData = new FormData();
+                formData.append('action', 'deleteClassroom');
+                formData.append('classroomId', id);
+                formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
+                
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        classrooms = classrooms.filter(c => c.id != id);
-                        attendanceRecords = attendanceRecords.filter(a => a.classroomId != id);
-                        
-                        renderClassroomManagement();
-                        populateAttendanceSelects();
-                        populateHistoryFilters();
-                        
-                        const deletedCount = result.deletedAttendanceRecords || relatedAttendance.length;
-                        showMessage(`ลบห้องเรียนสำเร็จ (ลบข้อมูลการเข้าเรียน ${deletedCount} รายการ)`, 'success');
-                    } else {
-                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + (result.message || 'ไม่ทราบสาเหตุ'), 'error');
-                    }
-                } catch (error) {
-                    console.error('Error deleting classroom:', error);
-                    if (error.message === 'Failed to fetch') {
-                        showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
-                    } else {
-                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message, 'error');
-                    }
-                } finally {
-                    hideLoading();
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    classrooms = classrooms.filter(c => c.id != id);
+                    attendanceRecords = attendanceRecords.filter(a => a.classroomId != id);
+                    
+                    renderClassroomManagement();
+                    populateAttendanceSelects();
+                    populateHistoryFilters();
+                    
+                    const deletedCount = result.deletedAttendanceRecords || relatedAttendance.length;
+                    showMessage(`ลบห้องเรียนสำเร็จ (ลบข้อมูลการเข้าเรียน ${deletedCount} รายการ)`, 'success');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + (result.message || 'ไม่ทราบสาเหตุ'), 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting classroom:', error);
+                if (error.message === 'Failed to fetch') {
+                    showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message, 'error');
+                }
+            } finally {
+                hideLoading();
             }
         }
 
@@ -966,109 +1176,99 @@
             }
             
             const relatedAttendance = attendanceRecords.filter(a => a.subjectId == id);
-            const confirmMessage = `คุณต้องการลบรายวิชา "${subject.name}" หรือไม่?\n\n` +
-                                 `ข้อมูลที่จะถูกลบ:\n` +
-                                 `- รายวิชา: 1 รายการ\n` +
-                                 `- ข้อมูลการเข้าเรียน: ${relatedAttendance.length} รายการ\n\n` +
-                                 `การดำเนินการนี้ไม่สามารถยกเลิกได้`;
             
-            if (confirm(confirmMessage)) {
-                try {
-                    showLoading('กำลังลบข้อมูล...');
-                    
-                    const formData = new FormData();
-                    formData.append('action', 'deleteSubject');
-                    formData.append('subjectId', id);
-                    formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
-                    
-                    const response = await fetch(WEB_APP_URL, {
-                        method: 'POST',
-                        body: formData
-                    });
+            try {
+                showLoading('กำลังลบข้อมูล...');
+                
+                const formData = new FormData();
+                formData.append('action', 'deleteSubject');
+                formData.append('subjectId', id);
+                formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
+                
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        subjects = subjects.filter(s => s.id != id);
-                        attendanceRecords = attendanceRecords.filter(a => a.subjectId != id);
-                        
-                        renderSubjectManagement();
-                        populateAttendanceSelects();
-                        populateHistoryFilters();
-                        
-                        const deletedCount = result.deletedAttendanceRecords || relatedAttendance.length;
-                        showMessage(`ลบรายวิชาสำเร็จ (ลบข้อมูลการเข้าเรียน ${deletedCount} รายการ)`, 'success');
-                    } else {
-                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + (result.message || 'ไม่ทราบสาเหตุ'), 'error');
-                    }
-                } catch (error) {
-                    console.error('Error deleting subject:', error);
-                    if (error.message === 'Failed to fetch') {
-                        showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
-                    } else {
-                        showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message, 'error');
-                    }
-                } finally {
-                    hideLoading();
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    subjects = subjects.filter(s => s.id != id);
+                    attendanceRecords = attendanceRecords.filter(a => a.subjectId != id);
+                    
+                    renderSubjectManagement();
+                    populateAttendanceSelects();
+                    populateHistoryFilters();
+                    
+                    const deletedCount = result.deletedAttendanceRecords || relatedAttendance.length;
+                    showMessage(`ลบรายวิชาสำเร็จ (ลบข้อมูลการเข้าเรียน ${deletedCount} รายการ)`, 'success');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + (result.message || 'ไม่ทราบสาเหตุ'), 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting subject:', error);
+                if (error.message === 'Failed to fetch') {
+                    showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการลบข้อมูล: ' + error.message, 'error');
+                }
+            } finally {
+                hideLoading();
             }
         }
 
-        async function editSubject(id) {
+        async function editSubject(id, newName) {
             const subject = subjects.find(s => s.id == id);
             if (!subject) {
                 showMessage('ไม่พบรายวิชาที่ต้องการแก้ไข', 'error');
                 return;
             }
             
-            const newName = prompt('แก้ไขชื่อรายวิชา:', subject.name);
-            if (newName && newName.trim() !== '' && newName.trim() !== subject.name) {
-                const oldName = subject.name;
-                subject.name = newName.trim();
+            const oldName = subject.name;
+            subject.name = newName;
                 
-                try {
-                    showLoading('กำลังบันทึกข้อมูล...');
-                    
-                    const formData = new FormData();
-                    formData.append('action', 'saveSubjects');
-                    formData.append('subjects', JSON.stringify(subjects));
-                    formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
-                    
-                    const response = await fetch(WEB_APP_URL, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        renderSubjectManagement();
-                        populateAttendanceSelects();
-                        populateHistoryFilters();
-                        showMessage('แก้ไขรายวิชาสำเร็จ', 'success');
-                    } else {
-                        throw new Error(result.message || 'เกิดข้อผิดพลาดในการบันทึก');
-                    }
-                } catch (error) {
-                    console.error('Error editing subject:', error);
-                    subject.name = oldName;
-                    renderSubjectManagement();
-                    if (error.message === 'Failed to fetch') {
-                        showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
-                    } else {
-                        showMessage('เกิดข้อผิดพลาดในการแก้ไขรายวิชา: ' + error.message, 'error');
-                    }
-                } finally {
-                    hideLoading();
+            try {
+                showLoading('กำลังบันทึกข้อมูล...');
+                
+                const formData = new FormData();
+                formData.append('action', 'saveSubjects');
+                formData.append('subjects', JSON.stringify(subjects));
+                formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
+                
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    renderSubjectManagement();
+                    populateAttendanceSelects();
+                    populateHistoryFilters();
+                    showMessage('แก้ไขรายวิชาสำเร็จ', 'success');
+                } else {
+                    throw new Error(result.message || 'เกิดข้อผิดพลาดในการบันทึก');
+                }
+            } catch (error) {
+                console.error('Error editing subject:', error);
+                subject.name = oldName;
+                renderSubjectManagement();
+                if (error.message === 'Failed to fetch') {
+                    showMessage('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต', 'error');
+                } else {
+                    showMessage('เกิดข้อผิดพลาดในการแก้ไขรายวิชา: ' + error.message, 'error');
+                }
+            } finally {
+                hideLoading();
             }
         }
 
@@ -1087,10 +1287,13 @@
                         <span class="text-sm text-gray-500 ml-2">(${classroom.students ? classroom.students.length : 0} คน)</span>
                     </div>
                     <div class="space-x-2">
-                        <button onclick="openStudentModal(${classroom.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
-                            แก้ไข
+                        <button onclick="openEditClassroomModal(${classroom.id})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                            แก้ไขชื่อ
                         </button>
-                        <button onclick="deleteClassroom(${classroom.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                        <button onclick="openStudentModal(${classroom.id})" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                            จัดการนักเรียน
+                        </button>
+                        <button onclick="openDeleteConfirmModal('classroom', ${classroom.id}, '${classroom.name}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
                             ลบ
                         </button>
                     </div>
@@ -1111,10 +1314,10 @@
                 div.innerHTML = `
                     <span class="font-medium text-gray-800">${subject.name}</span>
                     <div class="space-x-2">
-                        <button onclick="editSubject('${subject.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                        <button onclick="openEditSubjectModal('${subject.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm transition-colors">
                             แก้ไข
                         </button>
-                        <button onclick="deleteSubject('${subject.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
+                        <button onclick="openDeleteConfirmModal('subject', '${subject.id}', '${subject.name}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors">
                             ลบ
                         </button>
                     </div>
@@ -1644,5 +1847,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'973ff99555a97156',t:'MTc1NjAwODM2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'974035bcc1be926c',t:'MTc1NjAxMDgyOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
