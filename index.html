@@ -1979,40 +1979,39 @@
                 showMessage('ไม่พบข้อมูลห้องเรียนหรือรายวิชา', 'error');
                 return;
             }
-            
-
                 try {
                     showLoading('กำลังลบข้อมูล...');
-const payload = {
-    action: 'deleteAttendanceRecord',
-    date: date,
-    classroomId: classroomId,
-    subjectId: subjectId,
-    sheetId: '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4'
-};
+                // ตรวจสอบข้อมูลก่อนส่ง
+                console.log('ข้อมูลที่จะลบ:', { date, classroomId, subjectId });
+                
+                if (classroomId === '. ' || subjectId === '. ' || !classroomId || !subjectId) {
+                    throw new Error('ข้อมูลห้องเรียนหรือรายวิชาไม่ถูกต้อง กรุณาเลือกใหม่');
+                }
+                
+                const formData = new FormData();
+                formData.append('action', 'deleteAttendanceRecord');
+                formData.append('date', date);
+                formData.append('classroomId', classroomId);
+                formData.append('subjectId', subjectId);
+                formData.append('sheetId', '1ski-KWzrzsnWKkdlbJ0sPdwtNWZR5No809eK-Bk91t4');
+                
+                console.log('กำลังส่งข้อมูลลบไป Google Sheet...');
 
-console.log('กำลังส่งข้อมูลลบไป Google Sheet:', payload);
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: formData
+                });
 
-const response = await fetch(WEB_APP_URL, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-    mode: 'cors'
-});
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        attendanceRecords = attendanceRecords.filter(record => 
-                            !(record.date === date && record.classroomId == classroomId && record.subjectId == subjectId)
-                        );
-                        
+                const result = await response.json();
+                
+                if (result.success) {
+                    attendanceRecords = attendanceRecords.filter(record => 
+                        !(record.date === date && record.classroomId == classroomId && record.subjectId == subjectId)
+                    );
                         filterHistory();
                         showMessage('ลบข้อมูลการเข้าเรียนสำเร็จ', 'success');
                     } else {
@@ -2032,5 +2031,6 @@ const response = await fetch(WEB_APP_URL, {
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9740c4a30017cbe1',t:'MTc1NjAxNjY4MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
+
 
 
